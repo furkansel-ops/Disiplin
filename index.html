@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#11141d">
+<title>Alışkanlık Takvimi</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs></svg>
+<canvas id="amb" aria-hidden="true"></canvas>
+
+<div class="app">
+  <header class="top glass">
+    <div class="brand">
+      <span class="logo">◆</span>
+      <div style="flex:1;min-width:0"><h1>Alışkanlık Takvimi</h1><small id="profName"></small></div>
+      <button class="xp-pill" id="xpPill" data-a="go" data-go="14" aria-label="Ödüller ve seviye"><b id="xpLv">Lv 1</b><span class="xpb"><i id="xpBar"></i></span></button>
+    </div>
+    <div class="year-switch"><button class="icon-btn sm" data-a="yprev" aria-label="Önceki yıl">‹</button><span id="yLabel"></span><button class="icon-btn sm" data-a="ynext" aria-label="Sonraki yıl">›</button></div>
+    <div class="actions">
+      <button class="icon-btn hide-sm" id="themeBtn" data-a="theme" aria-label="Gece/gündüz teması" data-tip="Tema">🌙</button>
+      <button class="icon-btn" data-a="settings" aria-label="Ayarlar" data-tip="Görünüm, ses, hatırlatıcı, profiller">⚙️</button>
+      <button class="icon-btn" data-a="menu" aria-label="Veri ve yedekleme" data-tip="Yedekle / İçe aktar">⋯</button>
+      <button class="btn" data-a="habits" aria-label="Alışkanlıkları yönet">＋<span class="hide-sm"> Alışkanlık</span></button>
+    </div>
+  </header>
+  <nav class="tabs-wrap glass" aria-label="Sayfalar"><div class="tabs" id="tabs" role="tablist"></div></nav>
+  <main id="view" class="view"></main>
+  <footer class="foot">Veriler bu tarayıcıda otomatik kaydedilir · ← → ile sayfa değiştir · 1–9 ile bugünü işaretle · Ctrl+Z geri al</footer>
+</div>
+
+<dialog id="habitDlg"><form method="dialog" class="dlg" id="habitForm"></form></dialog>
+<dialog id="menuDlg"><form method="dialog" class="dlg">
+  <h3>Veri &amp; Yedekleme</h3>
+  <div class="menu-grid">
+    <button type="button" data-a="json-out">⬇️ JSON yedeği indir<small>Tüm veriler (fotoğraflar dahil)</small></button>
+    <button type="button" data-a="json-in">⬆️ JSON geri yükle<small>Mevcut verinin yerine geçer</small></button>
+    <button type="button" data-a="csv-out">📄 CSV dışa aktar<small>Excel ile açılır (tarih;alışkanlık)</small></button>
+    <button type="button" data-a="csv-in">📥 CSV içe aktar<small>İşaretler mevcut veriye eklenir</small></button>
+    <button type="button" data-a="xlsx-in">📗 Excel (.xlsx) içe aktar<small>Alışkanlık Takvimi şablonundan, seçili yıla</small></button>
+    <button type="button" data-a="qrOut">📲 QR ile başka cihaza aktar<small>Telefon kamerasıyla okut, verin taşınsın</small></button>
+    <button type="button" data-a="friend">🤝 Arkadaşla kıyasla<small>Özetini link / QR olarak paylaş</small></button>
+    <button type="button" data-a="sample">✨ Örnek verileri yükle<small>Demo alışkanlıklar ve işaretler</small></button>
+    <button type="button" data-a="reset" class="danger">🗑️ Sıfırla<small>İşaretler, notlar, hedefler silinir</small></button>
+  </div>
+  <input type="file" id="fileIn" hidden>
+  <p class="note">Veriler bu tarayıcının localStorage alanında, profil başına ayrı saklanır. Tarayıcı verisini temizlersen kaybolur — düzenli JSON yedeği al.</p>
+  <footer><button class="btn ghost" value="close">Kapat</button></footer>
+</form></dialog>
+<dialog id="setDlg"><form method="dialog" class="dlg" id="setForm"></form></dialog>
+<dialog id="dayDlg"><form method="dialog" class="dlg" id="dayForm"></form></dialog>
+<dialog id="detailDlg"><form method="dialog" class="dlg" id="detailForm"></form></dialog>
+<dialog id="reportDlg"><form method="dialog" class="dlg" id="reportForm"></form></dialog>
+<dialog id="xDlg"><form method="dialog" class="dlg" id="xForm"></form></dialog>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="tip" role="tooltip"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="undo" role="status"><span id="undoTxt"></span><button class="btn sm" data-a="undo">↩ Geri al</button></div>
+<div id="lvlUp" data-a="closeLvl"><div><div class="lu-t">Seviye atladın</div><div class="lu-n" id="luN">2</div><div class="lu-t" id="luS"></div></div></div>
+<div id="unlock" role="status" aria-live="polite"><span class="ue" id="ulE"></span><div><small>Başarım açıldı · +50 XP</small><b id="ulT"></b><div class="sub" id="ulD"></div></div></div>
+<div id="timerW" class="glass" role="timer">
+  <svg class="tr-ring" viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-bg" cx="32" cy="32" r="26"/><circle class="ring-fg" id="twRing" cx="32" cy="32" r="26" style="transition:stroke-dashoffset .3s linear"/></svg>
+  <div style="flex:1;min-width:0"><b id="twTime">25:00</b><div class="tw-name" id="twName"></div></div>
+  <button class="icon-btn sm" data-a="noise" aria-label="Arka plan sesi" data-tip="Arka plan sesi: beyaz gürültü, yağmur, okyanus">🎧</button>
+  <button class="icon-btn sm" data-a="timerPause" id="twPause" aria-label="Duraklat">⏸</button>
+  <button class="icon-btn sm" data-a="timerStop" aria-label="Zamanlayıcıyı durdur">✕</button>
+</div>
+<div id="wrapped" aria-modal="true" role="dialog" aria-label="Yıl özeti hikâyesi"></div>
+<div id="print"></div>
+<div id="focus" role="dialog" aria-modal="true" aria-label="Odak modu"></div>
+<div id="breath" role="dialog" aria-modal="true" aria-label="Nefes egzersizi"></div>
+<div id="bkChip" role="status"><span>💾 7 gündür yedek almadın</span><button class="btn sm" data-a="json-out">Yedekle</button><button class="btn ghost sm" data-a="bkLater">Sonra</button></div>
+
+<script src="js/core.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/qr.js"></script>
+<script src="js/rewards.js"></script>
+<script src="js/month.js"></script>
+<script src="js/year.js"></script>
+<script src="js/insights.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/extra.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
