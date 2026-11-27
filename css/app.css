@@ -808,3 +808,20 @@ body.wz-open{overflow:hidden}
 .tour-list li.ok b{text-decoration:line-through}
 @media (max-width:520px){.wz-feats{grid-template-columns:1fr}.wz-feats div{flex-direction:row;justify-content:flex-start;gap:10px;padding:10px 14px}.wz-feats small{margin-left:auto}}
 @media print{#welcome{display:none !important}}
+
+/* ===== Sayısal değer penceresi ve söz tonu ===== */
+.vhead{display:flex;align-items:center;gap:12px}
+.vhead .hicon{width:46px;height:46px;font-size:24px;border-radius:14px}
+.vhead h3{margin:0}
+.vbig{display:flex;align-items:center;justify-content:center;gap:10px}
+.vbig .icon-btn{width:56px;height:56px;font-size:26px;border-radius:16px}
+.vbig input{width:170px;text-align:center;font-size:40px;font-weight:800;letter-spacing:-.02em;border:1px solid var(--border-2);border-radius:16px;background:var(--surface-2);padding:8px 6px;-moz-appearance:textfield}
+.vbig input::-webkit-outer-spin-button,.vbig input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.vunit{font-weight:700;color:var(--muted);min-width:0}
+.vtrack{height:10px}
+.vtrack i{transition:width .35s cubic-bezier(.2,.8,.2,1)}
+.vquick{justify-content:center}
+.vquick .chip{font-size:15px;padding:9px 14px}
+.tcard .trow .btn{min-width:44px}
+.qtone{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.qtone .chip{font-size:12px;padding:5px 10px}

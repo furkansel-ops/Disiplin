@@ -35,7 +35,7 @@ const MOODS=['😞','😕','😐','🙂','😄'], MOODN=['Kötü','Durgun','Norm
 const PETS=[['cat','🐱','Kedi'],['dog','🐶','Köpek'],['fox','🦊','Tilki'],['dragon','🐲','Ejder'],['panda','🐼','Panda'],['bunny','🐰','Tavşan']];
 const SLOTS=[['sabah','🌅 Sabah'],['ogle','☀️ Öğle'],['aksam','🌙 Akşam']];
 const REASONS=[['yorgun','😴 Yorgundum'],['zaman','⏳ Zaman yoktu'],['unuttum','🤷 Unuttum'],['hasta','🤒 Hastaydım'],['motiv','🫠 Motivasyon yok'],['diger','💬 Diğer']];
-const EMOJIS=['💧','📕','🏃','💪','🧘','🥗','😴','🧠','✍️','🎯','🚭','🌅','🎸','💊','🧹','📵','🙏','💰','⏰','🥪','👋','🗣️','🎨','🌿'];
+const EMOJIS=['💧','📕','🏃','💪','🧘','🥗','😴','🧠','✍️','🎯','🚭','🌅','🎸','💊','🧹','📵','🙏','💰','⏰','🥪','👋','🗣️','🎨','🌿','🍬','📞','🏦','🛏️','🕊️','🌳','🎧','💡','📧','🔕','🍽️','👕','🌙','☕','📖','🤸','🚶','🚴','🏊','🍎','🦷','🧴','📝','🧩','🎹','📷','💻','🌍','❤️','🐶'];
 const ICONS={
   drop:'M12 3c3.5 4.5 6 7.6 6 10.5a6 6 0 0 1-12 0C6 10.6 8.5 7.5 12 3z',
   book:'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5zM4 19a2 2 0 0 1 2-2h13',
@@ -56,8 +56,18 @@ const ICONS={
 const TEMPLATES={
   'Sabah Rutini 🌅':[["06.30'da Uyan",'⏰',{cat:'saglik',diff:2,slot:'sabah'}],['Su İç','💧',{cat:'saglik',target:2,unit:'lt',slot:'sabah'}],['Esneme','🧘',{cat:'saglik',slot:'sabah'},],['Günü Planla','✍️',{cat:'kariyer',slot:'sabah'}]],
   'Öğrenci 🎓':[['Ders Çalış','🧠',{cat:'kariyer',diff:3,timer:25,target:120,unit:'dk'}],['Tekrar Yap','📕',{cat:'zihin',diff:2}],['Soru Çöz','✍️',{cat:'kariyer',target:50,unit:'soru'}],['Erken Yat','😴',{cat:'saglik'}]],
-  'Fitness 💪':[['Antrenman','💪',{cat:'saglik',diff:3,days:[1,3,5]}],['10.000 Adım','🏃',{cat:'saglik',target:10,unit:'bin adım'}],['Protein','🥗',{cat:'saglik'}],['Uyku 8 Saat','😴',{cat:'saglik'}]],
-  'Zihin 🧠':[['Meditasyon','🧘',{cat:'zihin',timer:10}],['Günlük Yaz','✍️',{cat:'zihin'}],['Ekran Molası','📵',{cat:'zihin',diff:2}],['Şükret','🙏',{cat:'zihin'}]]};
+  'Fitness 💪':[['Antrenman','💪',{cat:'saglik',diff:3,days:[1,3,5]}],['10.000 Adım','🚶',{cat:'saglik',target:10000,unit:'adım',inc:1000}],['Protein','🥗',{cat:'saglik'}],['Uyku 8 Saat','😴',{cat:'saglik'}]],
+  'Zihin 🧠':[['Meditasyon','🧘',{cat:'zihin',timer:10}],['Günlük Yaz','✍️',{cat:'zihin'}],['Ekran Molası','📵',{cat:'zihin',diff:2}],['Şükret','🙏',{cat:'zihin'}]],
+  'Sağlıklı Beslenme 🍎':[['Sebze / Meyve Ye','🍎',{cat:'saglik',target:5,unit:'porsiyon'}],['Şeker Yeme','🍬',{cat:'saglik',diff:3}],['Fast Food Yok','🍽️',{cat:'saglik',diff:2}],['Vitamin Al','💊',{cat:'saglik',slot:'sabah'}]],
+  'Spor+ 🏃':[['Koşu','🏃',{cat:'saglik',diff:3,target:5,unit:'km',inc:1,days:[1,3,5]}],['Şınav','💪',{cat:'saglik',diff:2,target:50,unit:'tekrar',inc:10}],['Plank','🤸',{cat:'saglik',target:3,unit:'dk'}],['Esneme','🧘',{cat:'saglik',slot:'aksam'}]],
+  'Üretkenlik 💼':[['Günün 3 Önceliği','🎯',{cat:'kariyer',slot:'sabah'}],['Derin Çalışma','💻',{cat:'kariyer',diff:3,timer:50,target:120,unit:'dk',inc:25}],['E-postaları Sıfırla','📧',{cat:'kariyer'}],['Yarını Planla','📝',{cat:'kariyer',slot:'aksam'}]],
+  'Kişisel Gelişim 📚':[['Yabancı Dil','🗣️',{cat:'zihin',diff:2,timer:20}],['Sayfa Oku','📖',{cat:'zihin',target:30,unit:'sayfa',inc:5}],['Podcast / Eğitim','🎧',{cat:'zihin'}],['Yeni Bir Şey Öğren','💡',{cat:'zihin'}]],
+  'Dijital Detoks 📵':[['Sosyal Medya Yok','🔕',{cat:'zihin',diff:3}],['Yatakta Telefon Yok','🛏️',{cat:'zihin',diff:2,slot:'aksam'}],['Ekran Süresi < 2 Saat','📵',{cat:'zihin',diff:2}],['Sabah İlk Saat Telefonsuz','🌅',{cat:'zihin',slot:'sabah'}]],
+  'Finans 💰':[['Harcamaları Yaz','💰',{cat:'kisisel'}],['Gereksiz Harcama Yok','🛑',{cat:'kisisel',diff:2}],['Birikim Yap','🏦',{cat:'kisisel',weekly:1}],['Yatırım Oku','📈',{cat:'kisisel',weekly:2}]],
+  'Ev & Düzen 🧹':[['Yatağını Topla','🛏️',{cat:'kisisel',slot:'sabah'}],['10 dk Toparlan','🧹',{cat:'kisisel',timer:10}],['Bulaşık','🍽️',{cat:'kisisel',slot:'aksam'}],['Çamaşır','👕',{cat:'kisisel',weekly:2}]],
+  'Sosyal & Aile 🫂':[['Aileni Ara','📞',{cat:'sosyal',weekly:3}],['Bir Arkadaşla Görüş','🫂',{cat:'sosyal',weekly:1}],['Teşekkür Et','🙏',{cat:'sosyal'}],['İyilik Yap','❤️',{cat:'sosyal'}]],
+  'Uyku 😴':[["23.00'te Yat",'🌙',{cat:'saglik',diff:2,slot:'aksam'}],['14.00 Sonrası Kafein Yok','☕',{cat:'saglik'}],['Yatmadan Kitap','📖',{cat:'zihin',slot:'aksam'}],['Uyku','😴',{cat:'saglik',target:8,unit:'saat'}]],
+  'Öz Bakım 🧴':[['Diş Fırçala (2x)','🦷',{cat:'saglik',target:2,unit:'kez'}],['Cilt Bakımı','🧴',{cat:'kisisel',slot:'aksam'}],['Doğada Yürü','🌳',{cat:'saglik',weekly:3}],['Nefes Egzersizi','🕊️',{cat:'zihin',timer:5}]]};
 const THEMES=[['dark','🌙 Gece','#11141d'],['light','☀️ Gündüz','#e9ebf5'],['neon','💜 Neon','#2a0b3d'],['pastel','🌸 Pastel','#f3e5fb'],['matrix','💚 Matrix','#06110a'],['sunset','🌅 Gün Batımı','#3a1526']];
 const BOSSES=[['🐌','Erteleme Canavarı'],['🐉','Tembellik Ejderi'],['🗿','Bahane Golemi'],['👻','Dağınıklık Hayaleti'],['🧟','Ekran Zombisi'],['🧌','Uyku Trolü'],['👺','Şeker Goblini'],['🐙','Kaos Krakeni'],['🧛','Mazeret Vampiri'],['🧙','Sis Cadısı'],['👹','Yorgunluk Devi'],['🐻','Kış Uykusu Ayısı']];
 const CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -96,9 +106,9 @@ function normHabit(h,i){
     weekly:clampInt(h.weekly,0,7,0),slot:SLOTS.some(s=>s[0]===h.slot)?h.slot:'',after:typeof h.after==='string'?h.after.slice(0,40):'',
     subs:Array.isArray(h.subs)?h.subs.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)).slice(0,8):[],
     step:clampInt(h.step,0,1000,0),stepMax:clampInt(h.stepMax,0,10000,0),pstart:DK.test(h.pstart||'')?h.pstart:'',
-    trial:clampInt(h.trial,0,365,0),tstart:DK.test(h.tstart||'')?h.tstart:'',created:DK.test(h.created||'')?h.created:''};
+    inc:clampInt(h.inc,0,10000,0),trial:clampInt(h.trial,0,365,0),tstart:DK.test(h.tstart||'')?h.tstart:'',created:DK.test(h.created||'')?h.created:''};
 }
-function defaultSettings(){ return {sound:true,ambient:true,reminder:'',view:'table',cat:'',backupRemind:true}; }
+function defaultSettings(){ return {sound:true,ambient:true,reminder:'',view:'table',cat:'',backupRemind:true,qtone:'karisik',qshift:0}; }
 function mkHabits(list){ return list.map(([name,icon,o={}],i)=>normHabit({id:uid(),name,icon,hue:HUES[i%HUES.length],...o},i)); }
 // Excel şablonundaki alışkanlıklar: örnek veride ve kurulum önerilerinde kullanılır
 const DEFAULT_HABITS=[["05.00'da Uyan",'⏰',{cat:'saglik',diff:3,slot:'sabah'}],['Yürüyüşe Çık','🏃',{cat:'saglik',slot:'sabah'}],['Kahvaltı Yap','🥪',{cat:'saglik',slot:'sabah'}],['Kitap Oku','📕',{cat:'zihin',diff:2,timer:20,slot:'aksam'}],
@@ -174,7 +184,8 @@ function validate(o){
   const st=isObj(o.settings)?o.settings:{}, def=defaultSettings();
   const settings={sound:st.sound!==undefined?!!st.sound:def.sound,ambient:st.ambient!==undefined?!!st.ambient:def.ambient,
     reminder:typeof st.reminder==='string'&&/^\d\d:\d\d$/.test(st.reminder)?st.reminder:'',
-    view:['table','cal','today'].includes(st.view)?st.view:'table',cat:CATS.some(c=>c[0]===st.cat)?st.cat:'',backupRemind:st.backupRemind!==undefined?!!st.backupRemind:true};
+    view:['table','cal','today'].includes(st.view)?st.view:'table',cat:CATS.some(c=>c[0]===st.cat)?st.cat:'',backupRemind:st.backupRemind!==undefined?!!st.backupRemind:true,
+    qtone:['yumusak','karisik','sert'].includes(st.qtone)?st.qtone:'karisik',qshift:clampInt(st.qshift,0,1e6,0)};
   habits.forEach(h=>{ if(!ids.has(h.after)||h.after===h.id) h.after=''; });
   return {v:2,theme:THEMES.some(t=>t[0]===o.theme)?o.theme:'dark',accent:typeof o.accent==='string'&&/^#[0-9a-f]{6}$/i.test(o.accent)?o.accent:'',
     year:Number.isInteger(o.year)&&o.year>1970&&o.year<3000?o.year:new Date().getFullYear(),

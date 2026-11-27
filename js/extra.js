@@ -121,7 +121,7 @@ function renderFocus(){
     <div class="f-e">${iconHTML(h.icon)}</div><h2>${esc(h.name)}</h2>
     ${pre?`<p class="sub">↳ ${esc(pre.name)} sonrası</p>`:''}${h.target?`<p class="f-v">${fmt(v)} / ${T} ${esc(h.unit)}</p>`:''}
     ${h.subs.length?`<div class="f-subs">${h.subs.map((x,i)=>`<button class="sub-i${sd.includes(i)?' on':''}" data-a="fsub" data-h="${esc(h.id)}" data-i="${i}">${sd.includes(i)?'☑':'☐'} ${esc(x)}</button>`).join('')}</div>`:''}
-    <div class="f-btns">${h.target?`<button class="btn ghost" data-a="finc" data-h="${esc(h.id)}">＋1 ${esc(h.unit)}</button>`:''}
+    <div class="f-btns">${h.target?`<button class="btn ghost" data-a="finc" data-h="${esc(h.id)}">＋${nf(stepOf(h))} ${esc(h.unit)}</button><button class="btn ghost" data-a="fval" data-h="${esc(h.id)}">✎ Değer gir</button>`:''}
       ${h.timer?`<button class="btn ghost" data-a="timer" data-h="${esc(h.id)}">▶ ${h.timer} dk</button>`:''}
       <button class="btn big-btn" data-a="fdone" data-h="${esc(h.id)}">✓ Tamamladım</button>
       <button class="btn ghost" data-a="fskip" data-h="${esc(h.id)}">⏭ Sonra</button></div></div>`;
@@ -476,6 +476,7 @@ const XA={
   focus:()=>openFocus(null), routine:el=>openFocus(el.dataset.slot), focusClose:()=>closeFocus(),
   fdone:el=>{ changeHabit(FQ.k,hab(el.dataset.h),'on',el); },
   finc:el=>{ changeHabit(FQ.k,hab(el.dataset.h),'inc',el); },
+  fval:el=>openVal(FQ.k,hab(el.dataset.h),el),
   fskip:el=>{ FQ.skip.push(el.dataset.h); if(FQ.ids.every(id=>isOn(FQ.k,id)||FQ.skip.includes(id))) FQ.skip=[]; renderFocus(); },
   fsub:el=>subToggle(FQ.k,el),
   tsub:el=>subToggle(todayKey(),el),
@@ -538,4 +539,7 @@ $('#dayForm').addEventListener('change',e=>{
   if(e.target.value) (S.reasons[dayK]=S.reasons[dayK]||{})[id]=e.target.value; else if(S.reasons[dayK]){ delete S.reasons[dayK][id]; if(!Object.keys(S.reasons[dayK]).length) delete S.reasons[dayK]; }
   rev++; save();
 });
+$('#xForm').addEventListener('input',e=>{ if(e.target.id==='valIn') updVal(); });
+$('#xForm').addEventListener('keydown',e=>{ if(e.target.id==='valIn'&&e.key==='Enter'){ e.preventDefault(); saveVal(valNow()); } });
+$('#xDlg').addEventListener('close',()=>{ VK=null; });
 $('#focus').addEventListener('keydown',e=>{ if(e.key==='Escape') closeFocus(); });

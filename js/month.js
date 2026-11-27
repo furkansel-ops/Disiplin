@@ -172,7 +172,7 @@ function tcardInner(h,k,on,pre,next){
     ${pre?`<span class="chain">${next?'👉 Sırada! ':'↳ '}${esc(pre.name)} sonrası</span>`:''}
     <span class="sub tsub">${h.target?`${fmt(v)} / ${T} ${esc(h.unit)}${T>h.target?' 📈':''}`:h.subs.length&&!on?`${sd.length}/${h.subs.length} adım`:on?'Tamamlandı 🎉':'Dokun ve tamamla'}${h.weekly?` · haftada ${h.weekly}`:''}${s>=2?` · <span class="streak" data-t="${flameT(s)}">🔥${s}</span>`:''}</span>
     ${h.subs.length?`<div class="subs">${h.subs.map((x,i)=>`<button type="button" class="sub-i${sd.includes(i)?' on':''}" data-a="tsub" data-h="${esc(h.id)}" data-i="${i}">${sd.includes(i)?'☑':'☐'} ${esc(x)}</button>`).join('')}</div>`:''}
-    ${h.target?`<div class="tbar"><i style="width:${Math.min(100,v/T*100)}%"></i></div><div class="trow"><button class="btn ghost sm" data-a="tdec" data-h="${esc(h.id)}" aria-label="Azalt">−</button><button class="btn ghost sm" data-a="tinc" data-h="${esc(h.id)}" aria-label="Artır">＋</button></div>`:''}
+    ${h.target?`<div class="tbar"><i style="width:${Math.min(100,v/T*100)}%"></i></div><div class="trow"><button class="btn ghost sm" data-a="tdec" data-h="${esc(h.id)}" aria-label="${stepOf(h)} azalt">−${fmt(stepOf(h))}</button><button class="btn ghost sm" data-a="tinc" data-h="${esc(h.id)}" aria-label="${stepOf(h)} artır">＋${fmt(stepOf(h))}</button><button class="btn ghost sm" data-a="tval" data-h="${esc(h.id)}" aria-label="Değer gir">✎</button></div>`:''}
     ${h.timer?`<div class="trow"><button class="btn ghost sm" data-a="timer" data-h="${esc(h.id)}">▶ ${h.timer} dk zamanlayıcı</button></div>`:''}`;
 }
 function questStrip(k){ return questsFor(k).map(q=>`<span class="quest${q.ok()?' done':''}">${q.e} ${esc(q.text)}<span class="qx">${q.ok()?'✓':'+20 XP'}</span></span>`).join(''); }
@@ -211,7 +211,7 @@ function changeHabit(k,h,how,origin,setTo){
   const snap=snapDay(k), was=isOn(k,h.id), v0=valOf(k,h.id);
   if(h.target>0){
     let v=v0;
-    if(how==='toggle') v=was?0:v0+1; else if(how==='inc') v=v0+1; else if(how==='dec') v=v0-1;
+    if(how==='toggle') v=was?0:Math.max(v0,tgtK(h,k)); else if(how==='inc') v=v0+stepOf(h); else if(how==='dec') v=v0-stepOf(h);
     else if(how==='on') v=Math.max(v0,tgtK(h,k)); else if(how==='off') v=0; else if(how==='set') v=setTo;
     setVal(k,h,v);
   } else setDone(k,h.id,how==='toggle'?!was:how==='on'||how==='inc'?true:how==='off'||how==='dec'?false:!!setTo);
@@ -258,21 +258,44 @@ function bulkDay(k,origin){
   celebrate(k);
 }
 
+/* --- sayısal değer penceresi: 50 soru, 10.000 adım gibi hedefleri tek tek basmadan gir --- */
+const NICE=[1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000];
+const stepOf=h=>h.inc||NICE.filter(n=>n<=Math.max(1,tgtK(h,todayKey())/10)).pop()||1;
+const nf=x=>fmt(x,x%1?1:0);
+let VK=null;
+function openVal(k,h,origin){
+  if(!h||k>todayKey()) return;
+  VK={k,h,origin}; const T=tgtK(h,k), v=valOf(k,h.id), s=stepOf(h), [,m,d]=pk(k);
+  xDlg(`<div class="vhead" style="--h:${h.hue}"><span class="hicon">${iconHTML(h.icon)}</span><div><h3>${esc(h.name)}</h3><span class="sub">${d} ${MONTHS[m]} · hedef ${nf(T)} ${esc(h.unit)}</span></div></div>
+    <div class="vbig"><button type="button" class="icon-btn" data-a="vadd" data-v="${-s}" aria-label="${s} azalt">−</button><input type="number" id="valIn" min="0" max="10000" step="any" inputmode="decimal" value="${v||''}" placeholder="0" aria-label="${esc(h.name)} değeri"><span class="vunit">${esc(h.unit)}</span><button type="button" class="icon-btn" data-a="vadd" data-v="${s}" aria-label="${s} artır">＋</button></div>
+    <div class="track vtrack"><i id="valBar" style="--h:${h.hue}"></i></div><p class="sub" id="valTxt" style="margin:0;text-align:center"></p>
+    <div class="chips vquick">${[s,s*2,s*5].map(x=>`<button type="button" class="chip" data-a="vadd" data-v="${x}">＋${nf(x)}</button>`).join('')}<button type="button" class="chip" data-a="vfill">✓ Hedefi tamamla</button></div>
+    <footer><button type="button" class="btn ghost" data-a="vzero">Sıfırla</button><button type="button" class="btn" data-a="vsave">Kaydet</button></footer>`);
+  updVal(); const i=$('#valIn'); i.focus(); i.select();
+}
+const valNow=()=>Math.max(0,Math.min(10000,parseFloat(String($('#valIn').value).replace(',','.'))||0));
+function updVal(){ if(!VK) return; const T=tgtK(VK.h,VK.k), v=valNow(); $('#valBar').style.width=Math.min(100,v/T*100)+'%'; $('#valTxt').textContent=v>=T?'🎉 Hedef tamam!':`Hedefe ${nf(T-v)} ${VK.h.unit} kaldı`; }
+function saveVal(v){ if(!VK) return; const {k,h,origin}=VK; VK=null; $('#xDlg').close(); changeHabit(k,h,'set',origin&&origin.isConnected?origin:null,v); }
+
 /* --- ayın sözü --- */
 const qKey=()=>`${S.year}-${view}`;
-function smartPool(){ // ayarlanmamışsa son 7 güne göre: zor haftada destek, iyi haftada tebrik sözü
-  const now=new Date(); if(S.year!==now.getFullYear()||view!==now.getMonth()) return null;
+const isCurMonth=()=>{ const n=new Date(); return S.year===n.getFullYear()&&view===n.getMonth(); };
+function smartPool(){ // karışık tonda son 7 güne göre: zor haftada sert, çok iyi haftada tebrik sözü
+  if(!isCurMonth()||S.settings.qtone!=='karisik') return null;
   let s=0,c=0; for(let i=1;i<=7;i++){ const ds=dayStat(addDays(todayKey(),-i)); s+=ds.s; c+=ds.c; }
-  if(s<7) return null; const r=c/s; return r<.4?['zor',QUOTES_TOUGH]:r>.85?['süper',QUOTES_CHEER]:null;
+  if(s<7) return null; const r=c/s; return r<.4?['zor',QUOTES_HARD]:r>.85?['süper',QUOTES_CHEER]:null;
 }
+// Günün sözü: tarihten seçilir, her gün değişir; ↻ ile kaydırılır
 function quoteText(){
   if(S.quotes[qKey()]!=null) return [S.quotes[qKey()],''];
-  const sp=smartPool(); if(sp) return [sp[1][new Date().getDate()%sp[1].length],sp[0]==='zor'?'Zor bir hafta — sana özel seçildi 💪':'Harika gidiyorsun — sana özel seçildi 🌟'];
-  return [QUOTES[view],''];
+  if(!isCurMonth()) return [QUOTES[view],''];
+  const sp=smartPool(), pool=sp?sp[1]:quotePool(), q=pool[(hash(todayKey())+S.settings.qshift)%pool.length];
+  return [q,sp?(sp[0]==='zor'?'Zor bir hafta — biraz sert konuşalım 🔥':'Harika gidiyorsun — sana özel seçildi 🌟'):''];
 }
 function quoteInner(){
-  const [q,why]=quoteText(), i=q.lastIndexOf(' — '), txt=i>0?q.slice(0,i):q, au=i>0?q.slice(i+3):'';
-  return `<span class="eyebrow">Ayın Motivasyon Sözü</span><blockquote>${esc(txt)}</blockquote>${au?`<figcaption>— ${esc(au)}</figcaption>`:''}${why?`<span class="sub">${why}</span>`:''}
+  const [q,why]=quoteText(), i=q.lastIndexOf(' — '), txt=i>0?q.slice(0,i):q, au=i>0?q.slice(i+3):'', cur=isCurMonth();
+  return `<span class="eyebrow">${cur?'Günün Sözü':'Ayın Motivasyon Sözü'}</span><blockquote>${esc(txt)}</blockquote>${au?`<figcaption>— ${esc(au)}</figcaption>`:''}${why?`<span class="sub">${why}</span>`:''}
+    ${cur?`<div class="qtone" role="group" aria-label="Söz tonu">${QTONES.map(([t,l])=>`<button class="chip${S.settings.qtone===t?' on':''}" data-a="qtone" data-t="${t}">${l}</button>`).join('')}</div>`:''}
     <div class="qtools"><button class="icon-btn sm" data-a="qshuffle" aria-label="Başka bir söz" data-tip="Başka bir söz">↻</button><button class="icon-btn sm" data-a="qedit" aria-label="Sözü düzenle" data-tip="Kendi sözünü yaz">✎</button></div>`;
 }
 function swapQuote(){ const f=$('#quote'); if(!f) return; f.innerHTML=quoteInner(); f.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:dur(420),easing:'cubic-bezier(.2,.8,.2,1)'}); }

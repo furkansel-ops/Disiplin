@@ -21,6 +21,7 @@ function hLi(h){
     <div class="frow"><label>Kategori</label><select data-f="cat" aria-label="Kategori"><option value="">—</option>${CATS.map(([c,l])=>`<option value="${c}"${h.cat===c?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="frow"><label>Zorluk</label><div class="seg">${[1,2,3].map(d=>`<button type="button" data-a="hdiff" data-v="${d}" class="${h.diff===d?'on':''}">${DIFFS[d]} · ${d*10} XP</button>`).join('')}</div></div>
     <div class="frow"><label>Sayısal hedef</label><input type="number" min="0" max="10000" data-f="target" value="${h.target||''}" placeholder="yok" aria-label="Günlük hedef sayısı"><input class="unit" data-f="unit" value="${esc(h.unit)}" placeholder="birim (lt, dk…)" maxlength="12" aria-label="Birim"></div>
+    <div class="frow"><label>Artış</label><input type="number" min="0" max="10000" data-f="inc" value="${h.inc||''}" placeholder="${h.target?stepOf(h):'otomatik'}" aria-label="Her dokunuşta eklenecek miktar"><span class="sub">her ＋ dokunuşunda eklenir</span></div>
     <div class="frow"><label>Zamanlayıcı</label><input type="number" min="0" max="240" data-f="timer" value="${h.timer||''}" placeholder="yok" aria-label="Zamanlayıcı dakikası"> dakika</div>
     <div class="frow"><label>Sıklık</label><select data-f="weekly" aria-label="Haftalık sıklık"><option value="0">Seçili her gün</option>${[1,2,3,4,5,6].map(n=>`<option value="${n}"${h.weekly===n?' selected':''}>Haftada ${n} kez (gün serbest)</option>`).join('')}</select></div>
     <div class="frow"><label>Rutin</label><select data-f="slot" aria-label="Rutin zamanı"><option value="">—</option>${SLOTS.map(([s,l])=>`<option value="${s}"${h.slot===s?' selected':''}>${l}</option>`).join('')}</select></div>
@@ -51,6 +52,7 @@ $('#habitForm').addEventListener('input',e=>{
   else if(f==='cat') h.cat=raw;
   else if(f==='unit') h.unit=raw.slice(0,12);
   else if(f==='target') h.target=clampInt(raw||0,0,10000,0);
+  else if(f==='inc') h.inc=clampInt(raw||0,0,10000,0);
   else if(f==='timer') h.timer=clampInt(raw||0,0,240,0);
   else if(f==='weekly') h.weekly=clampInt(raw||0,0,7,0);
   else if(f==='slot') h.slot=SLOTS.some(s=>s[0]===raw)?raw:'';

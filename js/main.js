@@ -97,14 +97,18 @@ const A={
   cat:el=>{ S.settings.cat=el.dataset.c; save(); $$('.toolbar .chip').forEach(b=>b.classList.toggle('on',b===el)); renderMonthBody(true); later(refreshMonth); },
   goToday:()=>{ const n=new Date(); if(S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); } view=-1; go(n.getMonth()); },
   dismissAlert:el=>{ alertDismissed=true; const a=el.closest('.alerts'); a.animate([{opacity:1},{opacity:0,transform:'translateY(-6px)'}],{duration:dur(250)}).finished.then(()=>a.remove()); },
-  cell:el=>changeHabit(el.dataset.k,hab(el.dataset.h),'toggle',el),
+  cell:el=>{ const h=hab(el.dataset.h); if(h&&h.target) openVal(el.dataset.k,h,el); else changeHabit(el.dataset.k,h,'toggle',el); },
   bulk:el=>bulkDay(el.dataset.k,el),
   day:el=>openDay(el.dataset.k),
-  tcard:el=>{ const h=hab(el.dataset.h); changeHabit(todayKey(),h,h.target?'inc':'toggle',el); },
+  tcard:el=>{ const h=hab(el.dataset.h); if(h.target) openVal(todayKey(),h,el); else changeHabit(todayKey(),h,'toggle',el); },
+  tval:el=>openVal(todayKey(),hab(el.dataset.h),el.closest('.tcard')),
+  vadd:el=>{ $('#valIn').value=String(Math.round(Math.max(0,valNow()+(+el.dataset.v))*100)/100); updVal(); sfx('tick'); },
+  vfill:()=>{ if(VK) saveVal(Math.max(valNow(),tgtK(VK.h,VK.k))); }, vzero:()=>saveVal(0), vsave:()=>saveVal(valNow()),
+  qtone:el=>{ S.settings.qtone=el.dataset.t; delete S.quotes[qKey()]; save(); swapQuote(); sfx('tick'); },
   tinc:el=>changeHabit(todayKey(),hab(el.dataset.h),'inc',el.closest('.tcard')),
   tdec:el=>changeHabit(todayKey(),hab(el.dataset.h),'dec',el.closest('.tcard')),
   mood:el=>{ const n=noteOf(dayK), v=+el.dataset.v; n.mood=n.mood===v?0:v; cleanNote(dayK); onData([dayK]); if(n.mood) sfx('tick'); },
-  dtog:el=>changeHabit(dayK,hab(el.dataset.h),'toggle',el),
+  dtog:el=>{ const h=hab(el.dataset.h); if(h&&h.target) openVal(dayK,h,el); else changeHabit(dayK,h,'toggle',el); },
   photoDel:()=>{ delete S.photos[dayK]; onData([dayK]); renderCollage(); },
   joker:()=>{ if(!S.jokers[dayK]&&jokersInWeek(dayK)>=1){ toast('🃏 Bu haftanın joker hakkı kullanıldı'); return; }
     if(S.jokers[dayK]) delete S.jokers[dayK]; else { S.jokers[dayK]=1; toast('🃏 Joker gün: bu gün oranları düşürmez, seriyi bozmaz'); }
@@ -119,7 +123,7 @@ const A={
   qsave:()=>{ const v=$('#qIn').value.trim(); if(v) S.quotes[qKey()]=v.slice(0,300); else delete S.quotes[qKey()]; save(); swapQuote(); },
   qreset:()=>{ delete S.quotes[qKey()]; save(); swapQuote(); },
   qcancel:()=>swapQuote(),
-  qshuffle:()=>{ const c=quoteText()[0], pool=[...QUOTES,...QUOTES_TOUGH,...QUOTES_CHEER].filter(q=>q!==c); S.quotes[qKey()]=pool[Math.floor(Math.random()*pool.length)]; save(); swapQuote(); },
+  qshuffle:()=>{ if(isCurMonth()){ delete S.quotes[qKey()]; S.settings.qshift++; } else { const c=quoteText()[0], pool=quotePool().filter(q=>q!==c); S.quotes[qKey()]=pool[Math.floor(Math.random()*pool.length)]; } save(); swapQuote(); },
   mode:el=>{ chartMode=el.dataset.mode; $$('.seg button[data-mode]').forEach(b=>b.classList.toggle('on',b===el)); drawChart(); },
   gchk:el=>{ const g=goalOf(el), li=el.closest('li'); g.done=!g.done; rev++; save();
     li.classList.toggle('done',g.done); el.setAttribute('aria-pressed',g.done);
@@ -151,10 +155,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('contextmenu',e=>{ // sağ tık / uzun bas: sayısal hücreye değer gir
   const el=e.target.closest('.cell.num'); if(!el||el.disabled) return; e.preventDefault();
-  const h=hab(el.dataset.h), k=el.dataset.k, [,m,d]=pk(k);
-  const v=prompt(`${h.name} · ${d} ${MONTHS[m]}\nDeğer gir (hedef ${h.target} ${h.unit}):`,valOf(k,h.id)); if(v==null) return;
-  const n=parseFloat(v.replace(',','.')); if(!Number.isFinite(n)||n<0){ toast('Geçersiz sayı'); return; }
-  changeHabit(k,h,'set',el,n);
+  openVal(el.dataset.k,hab(el.dataset.h),el);
 });
 document.addEventListener('keydown',e=>{
   const t=e.target, typing=t.matches?.('input,textarea,select,[contenteditable]'), dlg=document.querySelector('dialog[open]');
@@ -169,6 +170,7 @@ document.addEventListener('keydown',e=>{
   if(/^[1-9]$/.test(e.key)){ // hızlı giriş: 1–9 bugünün alışkanlıkları
     const h=active()[+e.key-1]; if(!h) return; const k=todayKey();
     const origin=$(`.cell[data-k="${k}"][data-h="${CSS.escape(h.id)}"]`)||$(`.tcard[data-h="${CSS.escape(h.id)}"]`);
+    if(h.target){ openVal(k,h,origin); return; }
     if(changeHabit(k,h,'toggle',origin)&&!origin) toast(`${iconText(h.icon)} ${h.name}: ${isOn(k,h.id)?'✅ tamamlandı':h.target?`${fmt(valOf(k,h.id))}/${h.target}`:'işaret kaldırıldı'}`);
   }
 });
@@ -244,6 +246,7 @@ function selfTest(){
     S.challenges=[{id:'c',name:'C',icon:'🏁',habitId:'a',days:3,start:'2000-01-10'}]; S.checks['2000-01-10']=['a']; S.checks['2000-01-11']=['a']; rev++;
     ok(chalStat(S.challenges[0]).failed&&chalStat(S.challenges[0]).ok===2,'meydan okuma');
     S.habits[1].created='2000-01-08'; rev++; ok(!schedK(S.habits[1],'2000-01-07')&&schedK(S.habits[1],'2000-01-08'),'başlangıç tarihi'); setDone('2000-01-03','a',true); ok(S.habits[1].created==='2000-01-03','geçmişe işaret'); S.habits[1].created=''; rev++;
+    ok(stepOf(normHabit({id:'q',name:'Q',target:50},0))===5&&stepOf(normHabit({id:'q',name:'Q',target:10000},0))===1000&&stepOf(normHabit({id:'q',name:'Q',target:3},0))===1&&stepOf(normHabit({id:'q',name:'Q',target:50,inc:7},0))===7,'adım miktarı');
     ok(qrMake('hello').length===21&&qrMake('x'.repeat(3000))===null,'QR boyutu');
     selfTestAsync(JSON.parse(JSON.stringify(S)));
   } finally { S=saved; rev++; }

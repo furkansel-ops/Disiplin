@@ -21,7 +21,8 @@ python -m http.server 5173
 
 **Takip**
 - 12 ay için üç görünüm: Tablo, Takvim ve Bugün.
-- Sayısal hedefler (litre, dakika gibi).
+- Sayısal hedefler (50 soru, 10.000 adım, 3 litre…). Dokununca değer penceresi açılır: sayıyı yaz ya da +5 / +10 / +25 gibi hızlı düğmelerle ekle. Artış miktarı alışkanlık ayarından değiştirilebilir.
+- 14 hazır paket, 60'tan fazla alışkanlık önerisi.
 - Haftanın belirli günlerine planlama.
 - "Haftada X kez" hedefi.
 - Alt görevler.
@@ -47,6 +48,11 @@ python -m http.server 5173
 - Alev seviyeli seriler.
 - Joker gün ve seri dondurma.
 - Tatil / hasta modu.
+
+**Günün sözü**
+- Her gün değişen söz. Havuzda 90'dan fazla söz var.
+- Ton seçimi: 🌿 Yumuşak · ⚖️ Karışık · 🔥 Sert. Sert modda acımasız, tokat gibi sözler çıkar.
+- Karışık modda kötü geçen bir haftadan sonra sözler kendiliğinden sertleşir.
 
 **Günlük**
 - Ruh hâli, enerji, stres ve uyku kaydı.
