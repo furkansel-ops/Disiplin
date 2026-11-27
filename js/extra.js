@@ -1,7 +1,7 @@
 'use strict';
 /* ===== Ek özellikler: evcil hayvan, avatar, meydan okumalar, odak/rutin, nefes, arka plan sesi,
    sesli not, günlük sayfası, mektup, vizyon panosu, ek içgörüler, arkadaş kıyası, QR aktarım, otomatik yedek ===== */
-const APP_URL='https://furkansel-ops.github.io/disiplin/';
+const APP_URL='https://furkansel-ops.github.io/Disiplin/';
 const appBase=()=>location.protocol.startsWith('http')?location.origin+location.pathname:APP_URL;
 
 /* ---------- IndexedDB (sesli notlar, yedek klasörü) ---------- */

@@ -2,7 +2,7 @@
 
 Excel'deki "Alışkanlık Takvimi" yapısını temel alan, animasyonlu ve oyunlaştırılmış bir alışkanlık takip uygulaması. Kurulum gerektirmez, hiçbir kütüphane kullanmaz.
 
-**Canlı sürüm:** https://furkansel-ops.github.io/disiplin/
+**Canlı sürüm:** https://furkansel-ops.github.io/Disiplin/
 
 ## Çalıştırma
 
