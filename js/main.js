@@ -44,7 +44,7 @@ function onData(keys){
     else renderMonthBody(false);
     refreshMonth(); updBoss(true);
   } else render();
-  checkQuests(); if(FQ) renderFocus();
+  checkQuests(); if(FQ) renderFocus(); updTour();
   if($('#dayDlg').open) renderDay();
   clearTimeout(onData.t); onData.t=setTimeout(()=>{ autoGoals(); checkAch(false); checkLevel(false); },450);
 }
@@ -85,7 +85,7 @@ function cleanNote(k){ const n=S.notes[k]; if(n&&!n.mood&&!n.text&&!n.energy&&!n
 
 /* eylemler */
 const A={
-  ...TA, ...XA,
+  ...TA, ...XA, ...WA,
   go:el=>go(+el.dataset.go),
   yprev:()=>setYear(S.year-1), ynext:()=>setYear(S.year+1),
   theme:el=>setTheme(['light','pastel'].includes(S.theme)?'dark':'light',el),
@@ -158,6 +158,7 @@ document.addEventListener('contextmenu',e=>{ // sağ tık / uzun bas: sayısal h
 });
 document.addEventListener('keydown',e=>{
   const t=e.target, typing=t.matches?.('input,textarea,select,[contenteditable]'), dlg=document.querySelector('dialog[open]');
+  if(WZ) return; // kurulum sihirbazı açıkken kısayollar kapalı
   if(e.key==='Escape'&&(FQ||BR)){ if(BR) closeBreath(); else closeFocus(); return; }
   if(WR){ if(e.key==='Escape') closeWrapped(); else if(e.key==='ArrowRight') showSlide(WR.i+1); else if(e.key==='ArrowLeft') showSlide(WR.i-1); return; }
   if((e.key==='Enter'||e.key===' ')&&t.matches?.('[data-a]:not(button):not(input)')){ e.preventDefault(); t.click(); return; }
@@ -242,6 +243,7 @@ function selfTest(){
     setDone('2000-01-10','s',false); ok(!S.subd['2000-01-10'],'alt görev temizliği'); rev++;
     S.challenges=[{id:'c',name:'C',icon:'🏁',habitId:'a',days:3,start:'2000-01-10'}]; S.checks['2000-01-10']=['a']; S.checks['2000-01-11']=['a']; rev++;
     ok(chalStat(S.challenges[0]).failed&&chalStat(S.challenges[0]).ok===2,'meydan okuma');
+    S.habits[1].created='2000-01-08'; rev++; ok(!schedK(S.habits[1],'2000-01-07')&&schedK(S.habits[1],'2000-01-08'),'başlangıç tarihi'); setDone('2000-01-03','a',true); ok(S.habits[1].created==='2000-01-03','geçmişe işaret'); S.habits[1].created=''; rev++;
     ok(qrMake('hello').length===21&&qrMake('x'.repeat(3000))===null,'QR boyutu');
     selfTestAsync(JSON.parse(JSON.stringify(S)));
   } finally { S=saved; rev++; }
@@ -257,6 +259,6 @@ async function selfTestAsync(st){ // aktarım paketinin gidiş-dönüşü (globa
 /* başlangıç */
 applyTheme(); $('#profName').textContent='👤 '+profName();
 render(); checkAch(true); checkLevel(true); updXP(false); checkQuests(); save();
-autoReport(); startReminders(); registerSW(); handleHash(); checkLetters();
+maybeOnboard(); autoReport(); startReminders(); registerSW(); handleHash(); checkLetters();
 setTimeout(autoBackup,4000); setInterval(autoBackup,6*36e5);
 if(location.hash==='#test') selfTest();

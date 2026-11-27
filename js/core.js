@@ -54,7 +54,7 @@ const ICONS={
   money:'M3 7h18v10H3zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
   phone:'M7 3h10v18H7zM11 18h2'};
 const TEMPLATES={
-  'Sabah Rutini 🌅':[["06.30'da Uyan",'⏰',{cat:'saglik',diff:2}],['Su İç','💧',{cat:'saglik',target:2,unit:'lt'}],['Esneme','🧘',{cat:'saglik'}],['Günü Planla','✍️',{cat:'kariyer'}]],
+  'Sabah Rutini 🌅':[["06.30'da Uyan",'⏰',{cat:'saglik',diff:2,slot:'sabah'}],['Su İç','💧',{cat:'saglik',target:2,unit:'lt',slot:'sabah'}],['Esneme','🧘',{cat:'saglik',slot:'sabah'},],['Günü Planla','✍️',{cat:'kariyer',slot:'sabah'}]],
   'Öğrenci 🎓':[['Ders Çalış','🧠',{cat:'kariyer',diff:3,timer:25,target:120,unit:'dk'}],['Tekrar Yap','📕',{cat:'zihin',diff:2}],['Soru Çöz','✍️',{cat:'kariyer',target:50,unit:'soru'}],['Erken Yat','😴',{cat:'saglik'}]],
   'Fitness 💪':[['Antrenman','💪',{cat:'saglik',diff:3,days:[1,3,5]}],['10.000 Adım','🏃',{cat:'saglik',target:10,unit:'bin adım'}],['Protein','🥗',{cat:'saglik'}],['Uyku 8 Saat','😴',{cat:'saglik'}]],
   'Zihin 🧠':[['Meditasyon','🧘',{cat:'zihin',timer:10}],['Günlük Yaz','✍️',{cat:'zihin'}],['Ekran Molası','📵',{cat:'zihin',diff:2}],['Şükret','🙏',{cat:'zihin'}]]};
@@ -96,18 +96,22 @@ function normHabit(h,i){
     weekly:clampInt(h.weekly,0,7,0),slot:SLOTS.some(s=>s[0]===h.slot)?h.slot:'',after:typeof h.after==='string'?h.after.slice(0,40):'',
     subs:Array.isArray(h.subs)?h.subs.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim().slice(0,40)).slice(0,8):[],
     step:clampInt(h.step,0,1000,0),stepMax:clampInt(h.stepMax,0,10000,0),pstart:DK.test(h.pstart||'')?h.pstart:'',
-    trial:clampInt(h.trial,0,365,0),tstart:DK.test(h.tstart||'')?h.tstart:''};
+    trial:clampInt(h.trial,0,365,0),tstart:DK.test(h.tstart||'')?h.tstart:'',created:DK.test(h.created||'')?h.created:''};
 }
 function defaultSettings(){ return {sound:true,ambient:true,reminder:'',view:'table',cat:'',backupRemind:true}; }
 function mkHabits(list){ return list.map(([name,icon,o={}],i)=>normHabit({id:uid(),name,icon,hue:HUES[i%HUES.length],...o},i)); }
+// Excel şablonundaki alışkanlıklar: örnek veride ve kurulum önerilerinde kullanılır
+const DEFAULT_HABITS=[["05.00'da Uyan",'⏰',{cat:'saglik',diff:3,slot:'sabah'}],['Yürüyüşe Çık','🏃',{cat:'saglik',slot:'sabah'}],['Kahvaltı Yap','🥪',{cat:'saglik',slot:'sabah'}],['Kitap Oku','📕',{cat:'zihin',diff:2,timer:20,slot:'aksam'}],
+  ['3 LT Su İç','💧',{cat:'saglik',target:3,unit:'lt',slot:'ogle'}],['Spora Git','💪',{cat:'saglik',diff:3,days:[1,3,5],slot:'aksam',subs:['Isınma','Antrenman','Esneme']}],['Ders Çalış','🧠',{cat:'kariyer',diff:3,timer:25,slot:'ogle'}],['Yeni Biriyle Tanış','👋',{cat:'sosyal',diff:2,weekly:2}]];
 function blankState(){
   return {v:2,theme:'dark',accent:'',year:new Date().getFullYear(),
-    habits:mkHabits([["05.00'da Uyan",'⏰',{cat:'saglik',diff:3,slot:'sabah'}],['Yürüyüşe Çık','🏃',{cat:'saglik',slot:'sabah'}],['Kahvaltı Yap','🥪',{cat:'saglik',slot:'sabah'}],['Kitap Oku','📕',{cat:'zihin',diff:2,timer:20,slot:'aksam'}],
-      ['3 LT Su İç','💧',{cat:'saglik',target:3,unit:'lt',slot:'ogle'}],['Spora Git','💪',{cat:'saglik',diff:3,days:[1,3,5],slot:'aksam',subs:['Isınma','Antrenman','Esneme']}],['Ders Çalış','🧠',{cat:'kariyer',diff:3,timer:25,slot:'ogle'}],['Yeni Biriyle Tanış','👋',{cat:'sosyal',diff:2,weekly:2}]]),
+    habits:mkHabits(DEFAULT_HABITS),
     checks:{},vals:{},times:{},notes:{},photos:{},jokers:{},freezes:{},quotes:{},goals:[],quits:[],ach:{},bosses:{},
     subd:{},reasons:{},vacations:[],challenges:[],letters:[],vision:[],voice:{},pet:{name:'Pofuduk',type:'cat'},avatar:{base:'🙂',hat:'',eyes:'',aura:''},
-    settings:defaultSettings(),levelSeen:null,lastReport:'',lastBackup:''};
+    settings:defaultSettings(),levelSeen:null,lastReport:'',lastBackup:'',onboarded:true,tour:{done:true,rw:false}};
 }
+// Yeni kullanıcı: alışkanlık yok, kurulum sihirbazı ve "ilk adımlar" rehberi açılır
+function freshState(){ const s=blankState(); s.habits=[]; s.onboarded=false; s.tour={done:false,rw:false}; s.settings.view='today'; return s; }
 function sampleState(){
   const s=blankState(), now=new Date(), y=s.year, tk=todayKey();
   s.goals=['Yurt Dışı Tatili','İspanyolca Öğren','100k Takipçi','İngilizce Öğren','3 Başarılı Marka Kur','Finansal Özgürlük','Saygınlık','Network']
@@ -176,6 +180,7 @@ function validate(o){
     year:Number.isInteger(o.year)&&o.year>1970&&o.year<3000?o.year:new Date().getFullYear(),
     habits,checks,vals,times,notes,photos,jokers,freezes,quotes,goals,quits,ach,bosses,settings,
     subd,reasons,vacations,challenges,letters,vision,voice,pet,avatar,
+    onboarded:o.onboarded!==false,tour:isObj(o.tour)?{done:!!o.tour.done,rw:!!o.tour.rw}:{done:true,rw:true}, // eski kayıtlar: kurulum tamam sayılır
     levelSeen:Number.isInteger(o.levelSeen)?o.levelSeen:null,lastReport:typeof o.lastReport==='string'?o.lastReport.slice(0,10):'',lastBackup:DK.test(o.lastBackup||'')?o.lastBackup:''};
 }
 
@@ -186,7 +191,7 @@ const dataKey=id=>id==='main'?KEY:KEY+':'+id;
 let P=(()=>{ try{ const p=JSON.parse(lsGet(PKEY)); if(isObj(p)&&Array.isArray(p.list)&&p.list.length&&p.list.every(x=>x&&typeof x.id==='string'&&typeof x.name==='string')) return {active:p.list.some(x=>x.id===p.active)?p.active:p.list[0].id,list:p.list}; }catch(e){} return {active:'main',list:[{id:'main',name:'Ben'}]}; })();
 function loadProfile(id){
   try{ const raw=lsGet(dataKey(id)); if(raw){ const s=validate(JSON.parse(raw)); if(s) return s; } }catch(e){}
-  return id==='main'?sampleState():blankState();
+  return freshState();
 }
 let S=loadProfile(P.active), rev=0, saveT, saveWarned=false;
 function savePK(){ try{ localStorage.setItem(PKEY,JSON.stringify(P)); }catch(e){} }
@@ -212,14 +217,15 @@ const restK=k=>!!S.jokers[k]||vacSet().has(k); // joker veya tatil/hasta günü:
 // "Haftada X kez": yapılan günler + kalan kotayı karşılayacak ilk boş günler (bugün/gelecek, yetmezse geçmişin son günleri) planlı sayılır
 function weekSched(h,mon){
   return memo(`w${h.id}${mon}`,()=>{
-    const tk=todayKey(), ks=[...Array(7)].map((_,i)=>addDays(mon,i)).filter(k=>!restK(k)&&h.days.includes(wdK(k)));
+    const tk=todayKey(), ks=[...Array(7)].map((_,i)=>addDays(mon,i)).filter(k=>!restK(k)&&h.days.includes(wdK(k))&&!(h.created&&k<h.created));
     const set=new Set(ks.filter(k=>isOn(k,h.id))); let need=Math.max(0,h.weekly-set.size);
     for(const k of ks) if(need&&k>=tk&&!set.has(k)){ set.add(k); need--; }
     for(let i=ks.length-1;i>=0&&need;i--) if(ks[i]<tk&&!set.has(ks[i])){ set.add(ks[i]); need--; }
     return set;
   });
 }
-const schedK=(h,k)=>!restK(k)&&h.days.includes(wdK(k))&&(!h.weekly||weekSched(h,mondayOf(k)).has(k));
+// eklenmeden önceki günler planlı sayılmaz (yeni başlayan biri geçmiş günler için cezalandırılmaz)
+const schedK=(h,k)=>!restK(k)&&h.days.includes(wdK(k))&&!(h.created&&k<h.created)&&(!h.weekly||weekSched(h,mondayOf(k)).has(k));
 // Kademeli hedef: başlangıçtan itibaren her 7 günde bir "step" kadar artar
 const tgtK=(h,k)=>h.target&&h.step&&h.pstart&&k>=h.pstart?Math.min(h.stepMax||10000,h.target+h.step*Math.floor(daysBetween(h.pstart,k)/7)):h.target;
 function dayStat(k){
@@ -282,6 +288,7 @@ function freezesInMonth(k){ const p=k.slice(0,7); return Object.keys(S.freezes).
 /* ---------- veri değişiklikleri ---------- */
 function setDone(k,id,on,keepSubs){
   const a=S.checks[k]||[], h=hab(id);
+  if(on&&h&&h.created&&k<h.created) h.created=k; // geçmişe işaret atılırsa başlangıç geri çekilir
   if(!keepSubs&&h&&h.subs.length){ if(on) (S.subd[k]=S.subd[k]||{})[id]=h.subs.map((_,i)=>i); else if(S.subd[k]){ delete S.subd[k][id]; if(!Object.keys(S.subd[k]).length) delete S.subd[k]; } }
   if(on&&!a.includes(id)){ S.checks[k]=[...a,id]; if(k===todayKey()) (S.times[k]=S.times[k]||{})[id]=hhmm(); }
   else if(!on&&a.includes(id)){ S.checks[k]=a.filter(x=>x!==id); if(!S.checks[k].length) delete S.checks[k]; if(S.times[k]){ delete S.times[k][id]; if(!Object.keys(S.times[k]).length) delete S.times[k]; } }

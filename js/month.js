@@ -32,6 +32,7 @@ function renderMonth(){
     </div>
     ${fg.length?`<div class="alerts rise">💡 <b>Biraz ihmal edildi:</b>${fg.map(([h,n])=>`<button class="chip" data-a="detail" data-id="${esc(h.id)}">${iconHTML(h.icon)} ${esc(h.name)} · ${n} gündür boş</button>`).join('')}<span style="flex:1"></span><button class="icon-btn sm" data-a="dismissAlert" aria-label="Uyarıyı kapat">✕</button></div>`:''}
     ${tr.map(h=>{ const st=trialRate(h); return `<div class="alerts rise trial">🧪 <b>${esc(h.name)}</b> denemesi bitti: ${h.trial} günde %${fmt(st*100)} başarı. Devam mı?<span style="flex:1"></span><button class="btn sm" data-a="trialKeep" data-id="${esc(h.id)}">💪 Devam et</button><button class="btn ghost sm" data-a="trialDrop" data-id="${esc(h.id)}">📦 Bırak (arşivle)</button></div>`; }).join('')}
+    ${isCur?tourHTML():''}
     <div class="boss glass rise${b.dead?' dead':''}" style="--i:2" id="boss"><span class="boss-e" id="bossE">${b.e}</span>
       <div><span class="label">Ayın Boss'u · her tik 1 hasar · yenince +200 XP</span><b id="bossName">${b.name}${b.dead?' — YENİLDİ ✓':''}</b><div class="hp"><i id="bossHp"></i></div><span class="sub" id="bossTxt"></span></div></div>
     <div class="toolbar rise" style="--i:3">

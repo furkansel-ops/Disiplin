@@ -13,6 +13,8 @@ Excel'deki "Alışkanlık Takvimi" yapısını temel alan, animasyonlu ve oyunla
 python -m http.server 5173
 ```
 
+- **İlk açılışta:** Kısa bir kurulum seni karşılar: adını yazar, takip edeceğin alışkanlıkları (hazır paketlerden ya da kendin) seçer ve evcil dostunu belirlersin. Ardından "İlk adımlar" rehberi temel özellikleri gösterir. Sadece göz atmak istersen **"Önce örnek verilerle keşfet"** seçeneği ayrı bir Demo profili açar; kendi verine dokunmaz.
+- **Yeni başlayanlar cezalandırılmaz:** Bir alışkanlık eklendiği günden itibaren sayılır, öncesi "kaçırıldı" sayılmaz. Geçmiş bir güne işaret koyarsan başlangıç o güne çekilir.
 - **Verini bir cihazdan diğerine taşımak için:** ⋯ → **QR ile başka cihaza aktar** seçeneğini kullan, ardından diğer telefonun kamerasıyla QR kodu okut.
 
 ## Özellikler

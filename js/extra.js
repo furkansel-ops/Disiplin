@@ -469,7 +469,7 @@ const XA={
   petPat:el=>{ const e=el.querySelector('.pet-e'); if(e){ e.classList.remove('jump'); void e.offsetWidth; e.classList.add('jump'); } const r=el.getBoundingClientRect(); burst(r.left+r.width/2,r.top+20,10,330); sfx('pop',3); floatText(r.left+r.width/2,r.top,'💕'); },
   petType:el=>{ S.pet.type=el.dataset.t; save(); render(); },
   avSet:el=>{ S.avatar[el.dataset.f]=el.dataset.v; save(); render(); sfx('tick'); },
-  chTpl:el=>{ const [name,icon,days,hn]=CH_TPL[+el.dataset.i], h=findOrCreateHabit(hn,icon); if(h.archived) h.archived=false; startChallenge(name,icon,h.id,days); },
+  chTpl:el=>{ const [name,icon,days,hn]=CH_TPL[+el.dataset.i], h=findOrCreateHabit(hn,icon); if(h.archived) h.archived=false; if(!h.created&&!Object.values(S.checks).some(a=>a.includes(h.id))) h.created=todayKey(); startChallenge(name,icon,h.id,days); },
   chDel:el=>{ if(!arm(el,'Sil?')) return; const id=el.closest('.ccard').dataset.id, before=JSON.stringify(S); S.challenges=S.challenges.filter(c=>c.id!==id); pushUndo('Meydan okuma silindi',[{full:before}]); rev++; save(); render(); },
   chRestart:el=>{ const c=S.challenges.find(x=>x.id===el.closest('.ccard').dataset.id); c.start=todayKey(); rev++; save(); render(); toast('↻ Yeniden başladı — bu sefer olacak! 💪'); },
   noise:()=>nextNoise(),
@@ -494,7 +494,7 @@ const XA={
   linkShare:()=>navigator.share({title:'Alışkanlık Takvimi',url:$('#linkOut').value}).catch(()=>{}),
   impNew:()=>{ if(!pendingImp) return; const id=uid(); try{ localStorage.setItem(dataKey(id),JSON.stringify(pendingImp)); }catch(e){ toast('⚠️ Depolama dolu'); return; }
     P.list.push({id,name:'Aktarılan '+(P.list.length+1)}); savePK(); pendingImp=null; $('#xDlg').close(); switchProfile(id); },
-  impReplace:el=>{ if(!pendingImp||!arm(el,'Emin misin? Tekrar dokun')) return; const before=JSON.stringify(S); S=pendingImp; pendingImp=null; pushUndo('Aktarılan veri yüklendi',[{full:before}]); rev++; flush(); $('#xDlg').close(); applyTheme(); render(); updXP(); toast('📲 Veri aktarıldı'); },
+  impReplace:el=>{ if(!pendingImp||!arm(el,'Emin misin? Tekrar dokun')) return; const before=JSON.stringify(S); S=pendingImp; pendingImp=null; pushUndo('Aktarılan veri yüklendi',[{full:before}]); rev++; flush(); $('#xDlg').close(); applyTheme(); render(); updXP(); maybeOnboard(); toast('📲 Veri aktarıldı'); },
   bkPick:async()=>{ try{ const d=await showDirectoryPicker({mode:'readwrite',id:'aliskanlik'}); await IDB.set('backupDir',d); if(await backupNow(false)) toast(`💾 "${d.name}" klasörüne yedek alındı`); renderSettings(); }catch(e){ if(e.name!=='AbortError') toast('⚠️ Klasör seçilemedi'); } },
   bkNow:async()=>{ try{ if(await backupNow(false)){ toast('💾 Yedek alındı'); renderSettings(); } else toast('Önce bir klasör seç'); }catch(e){ toast('⚠️ Yedeklenemedi: '+e.message); } },
   bkLater:()=>$('#bkChip').classList.remove('show'),

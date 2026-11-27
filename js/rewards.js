@@ -124,6 +124,7 @@ function quitCard(q,i){
     <button class="btn ghost sm" data-a="qslip">😔 Kaydım, sıfırla</button></div>`;
 }
 function renderRewards(){
+  if(!S.tour.rw){ S.tour.rw=true; save(); }
   const x=xpInfo(), y=S.year, tk=todayKey(), qs=questsFor(tk), got=ACH.filter(a=>S.ach[a[0]]).length;
   let garden='';
   for(let m=0;m<12;m++){

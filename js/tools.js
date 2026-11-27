@@ -307,7 +307,7 @@ function switchProfile(id){
   flush(); P.active=id; savePK(); S=loadProfile(id); rev++; undoStack.length=0; lastXP=null; questSeen=null;
   applyTheme(); view=S.year===new Date().getFullYear()?new Date().getMonth():0;
   $('#profName').textContent='👤 '+profName(); render(); updXP(); checkAch(true); checkLevel(true); checkQuests();
-  toast(`👤 ${profName()} profiline geçildi`);
+  toast(`👤 ${profName()} profiline geçildi`); maybeOnboard();
 }
 function registerSW(){ if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
@@ -315,7 +315,7 @@ function registerSW(){ if('serviceWorker' in navigator&&location.protocol.starts
 const TA={
   hmore:el=>el.closest('li').classList.toggle('open'),
   hadd:()=>{ const nm=$('#newName'), name=nm.value.trim(); if(!name){ shake(nm); return; }
-    const h=normHabit({id:uid(),name,icon:newIcon,hue:HUES[S.habits.length%HUES.length]},S.habits.length);
+    const h=normHabit({id:uid(),name,icon:newIcon,hue:HUES[S.habits.length%HUES.length],created:todayKey()},S.habits.length);
     S.habits.push(h); hDirty=true; rev++; save();
     flip($('#hlist'),()=>$('#hlist').insertAdjacentHTML('beforeend',hLi(h)));
     nm.value=''; newIcon='✨'; $('#newIconBtn').innerHTML=iconHTML(newIcon); nm.focus(); sfx('pop'); },
@@ -341,7 +341,7 @@ const TA={
     li.animate([{opacity:1},{opacity:0,transform:'scale(.95)'}],{duration:dur(220)}).finished.then(()=>li.remove());
   },
   tpl:el=>{ const list=TEMPLATES[el.dataset.t]; let n=0;
-    list.forEach(([name,icon,o])=>{ if(S.habits.some(h=>h.name.toLocaleLowerCase('tr')===name.toLocaleLowerCase('tr'))) return; S.habits.push(normHabit({id:uid(),name,icon,hue:HUES[S.habits.length%HUES.length],...o},S.habits.length)); n++; });
+    list.forEach(([name,icon,o])=>{ if(S.habits.some(h=>h.name.toLocaleLowerCase('tr')===name.toLocaleLowerCase('tr'))) return; S.habits.push(normHabit({id:uid(),name,icon,hue:HUES[S.habits.length%HUES.length],...o,created:todayKey()},S.habits.length)); n++; });
     hDirty=true; rev++; save(); renderHabitDlg(); toast(n?`✨ ${n} alışkanlık eklendi`:'Bu paketteki alışkanlıklar zaten var'); if(n) sfx('win'); },
   timer:el=>{ startTimer(hab(el.dataset.h)); $('#detailDlg').open&&$('#detailDlg').close(); },
   timerPause:()=>{ if(!TM) return; if(TM.paused){ TM.end=Date.now()+TM.left; TM.paused=false; $('#twPause').textContent='⏸'; } else { TM.left=Math.max(0,TM.end-Date.now()); TM.paused=true; $('#twPause').textContent='▶'; } timerTick(); },
@@ -356,8 +356,8 @@ const TA={
   sample:()=>{ if(!confirm('Bu profilin verileri yerine örnek veriler yüklensin mi? (Önce JSON yedeği almanı öneririz.)')) return;
     const before=JSON.stringify(S), t=S.theme; S=sampleState(); S.theme=t; pushUndo('Örnek veriler yüklendi',[{full:before}]);
     rev++; flush(); view=new Date().getMonth(); $('#menuDlg').close(); render(); updXP(); checkAch(true); checkLevel(true); toast('✨ Örnek veriler yüklendi'); },
-  reset:()=>{ if(!confirm('Bu profilin tüm işaretleri, notları, fotoğrafları ve hedefleri silinecek; varsayılan alışkanlık listesi kalacak. Emin misin?')) return;
-    const before=JSON.stringify(S), t=S.theme; S=blankState(); S.theme=t; pushUndo('Veriler sıfırlandı',[{full:before}]);
+  reset:()=>{ if(!confirm('Bu profilin tüm işaretleri, notları, fotoğrafları ve hedefleri silinecek; alışkanlık listen, evcil dostun ve ayarların kalacak. Emin misin?')) return;
+    const before=JSON.stringify(S), o=S; S=blankState(); for(const f of ['theme','accent','habits','pet','avatar','settings']) S[f]=o[f]; pushUndo('Veriler sıfırlandı',[{full:before}]);
     rev++; flush(); $('#menuDlg').close(); render(); updXP(); toast('🗑️ Veriler sıfırlandı · Ctrl+Z ile geri alabilirsin'); },
   share:()=>shareImage(),
   print:()=>printMonth(),
