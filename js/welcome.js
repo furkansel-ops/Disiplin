@@ -41,9 +41,9 @@ function finishWelcome(){
   S.habits=[...WZ.sel.entries()].map(([name,{icon,o}],i)=>normHabit({...o,id:uid(),name,icon,hue:HUES[i%HUES.length],created:todayKey()},i));
   S.pet={name:(WZ.petName||'Pofuduk').slice(0,20),type:WZ.pet};
   if(/^\d\d:\d\d$/.test(WZ.rem)){ S.settings.reminder=WZ.rem; if('Notification' in window&&Notification.permission==='default') Notification.requestPermission().catch(()=>{}); }
-  if(WZ.name){ const p=P.list.find(x=>x.id===P.active); if(p){ p.name=WZ.name.slice(0,24); savePK(); $('#profName').textContent='👤 '+profName(); } }
+  if(WZ.name){ const p=P.list.find(x=>x.id===P.active); if(p){ p.name=WZ.name.slice(0,24); savePK(); } }
   const nm=WZ.name; S.onboarded=true; S.year=new Date().getFullYear(); rev++; flush(); closeWelcome();
-  view=new Date().getMonth(); render(); updXP(false); checkQuests();
+  view=TODAY; render(); updXP(false); checkQuests();
   setTimeout(()=>{ rain(); sfx('win'); toast(`🎉 Hoş geldin${nm?', '+nm:''}! ${S.habits.length?'İlk tikini atmaya hazırsın':'Sağ üstteki ＋ ile alışkanlık ekleyebilirsin'}`); },250);
 }
 

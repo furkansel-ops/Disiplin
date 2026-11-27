@@ -19,6 +19,8 @@ python -m http.server 5173
 
 ## Özellikler
 
+**Arayüz:** Uygulama Bugün ekranıyla açılır. Beş bölüm var: Bugün · Takvim · İstatistik · Ödüller · Günlük. Tablette ve bilgisayarda menü solda, telefonda altta durur. Takvim'de ay ‹ › ile seçilir; İstatistik'te yıl özeti ile içgörüler arasında geçilir.
+
 **Takip**
 - 12 ay için üç görünüm: Tablo, Takvim ve Bugün.
 - Sayısal hedefler (50 soru, 10.000 adım, 3 litre…). Dokununca değer penceresi açılır: sayıyı yaz ya da +5 / +10 / +25 gibi hızlı düğmelerle ekle. Artış miktarı alışkanlık ayarından değiştirilebilir.
@@ -103,7 +105,7 @@ python -m http.server 5173
 
 ## Kısayollar
 
-- `←` `→`: sayfa değiştir. Mobilde parmakla sağa-sola kaydır.
+- `←` `→`: Takvim'de ay, diğer bölümlerde bölüm değiştir. Mobilde parmakla sağa-sola kaydır.
 - `1`–`9`: bugünün alışkanlıklarını işaretle.
 - `Ctrl+Z`: geri al.
 - `Esc`: odak modundan ya da nefes ekranından çık.

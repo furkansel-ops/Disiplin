@@ -302,13 +302,13 @@ $('#setForm').addEventListener('change',e=>{
 });
 $('#setForm').addEventListener('input',e=>{
   if(e.target.id==='accentIn'){ S.accent=e.target.value; applyTheme(); save(); }
-  if(e.target.matches('[data-pname]')){ const v=e.target.value.trim(); if(!v) return; const p=P.list.find(x=>x.id===e.target.closest('.prow').dataset.id); p.name=v.slice(0,24); savePK(); $('#profName').textContent='👤 '+profName(); }
+  if(e.target.matches('[data-pname]')){ const v=e.target.value.trim(); if(!v) return; const p=P.list.find(x=>x.id===e.target.closest('.prow').dataset.id); p.name=v.slice(0,24); savePK(); updTop(); }
 });
 $('#setForm').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.preventDefault(); if(e.target.id==='newProf') TA.padd(); } });
 function switchProfile(id){
   flush(); P.active=id; savePK(); S=loadProfile(id); rev++; undoStack.length=0; lastXP=null; questSeen=null;
-  applyTheme(); view=S.year===new Date().getFullYear()?new Date().getMonth():0;
-  $('#profName').textContent='👤 '+profName(); render(); updXP(); checkAch(true); checkLevel(true); checkQuests();
+  applyTheme(); S.year=new Date().getFullYear(); view=TODAY; lastMonth=new Date().getMonth();
+  render(); updXP(); checkAch(true); checkLevel(true); checkQuests();
   toast(`👤 ${profName()} profiline geçildi`); maybeOnboard();
 }
 function registerSW(){ if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{}); }
@@ -357,7 +357,7 @@ const TA={
   'xlsx-in':()=>{ fileMode='xlsx'; $('#fileIn').accept='.xlsx'; $('#fileIn').click(); },
   sample:()=>{ if(!confirm('Bu profilin verileri yerine örnek veriler yüklensin mi? (Önce JSON yedeği almanı öneririz.)')) return;
     const before=JSON.stringify(S), t=S.theme; S=sampleState(); S.theme=t; pushUndo('Örnek veriler yüklendi',[{full:before}]);
-    rev++; flush(); view=new Date().getMonth(); $('#menuDlg').close(); render(); updXP(); checkAch(true); checkLevel(true); toast('✨ Örnek veriler yüklendi'); },
+    rev++; flush(); view=TODAY; $('#menuDlg').close(); render(); updXP(); checkAch(true); checkLevel(true); toast('✨ Örnek veriler yüklendi'); },
   reset:()=>{ if(!confirm('Bu profilin tüm işaretleri, notları, fotoğrafları ve hedefleri silinecek; alışkanlık listen, evcil dostun ve ayarların kalacak. Emin misin?')) return;
     const before=JSON.stringify(S), o=S; S=blankState(); for(const f of ['theme','accent','habits','pet','avatar','settings']) S[f]=o[f]; pushUndo('Veriler sıfırlandı',[{full:before}]);
     rev++; flush(); $('#menuDlg').close(); render(); updXP(); toast('🗑️ Veriler sıfırlandı · Ctrl+Z ile geri alabilirsin'); },

@@ -242,7 +242,7 @@ function visionHTML(){
 function renderJournal(){
   const y=S.year;
   $('#view').innerHTML=`<section>
-    <div class="mhead"><div class="rise"><span class="eyebrow">Anılar</span><h2>Günlük</h2></div></div>
+    <div class="mhead"><div class="rise"><span class="eyebrow">Anılar</span><h2>Günlük</h2></div>${yearSw()}</div>
     <div class="igrid">
       <div class="card glass rise" style="--i:1"><div class="chead"><h3>🎨 ${y} Piksellerde Yıl</h3><div class="seg" role="group" aria-label="Ölçüt">${PIX.map(([m,l])=>`<button data-a="pix" data-m="${m}" class="${pixMetric===m?'on':''}">${l.split(' ')[0]}</button>`).join('')}</div></div>
         <div id="pixBox">${pixelsHTML(y)}</div><p class="hint">${PIX.find(p=>p[0]===pixMetric)[1]} · bir kareye dokun: o günü aç</p></div>
@@ -509,7 +509,8 @@ const XA={
 function subToggle(k,el){
   const h=hab(el.dataset.h), i=+el.dataset.i, snap=snapDay(k), was=isOn(k,h.id);
   setSub(k,h,i,!subsOf(k,h.id).includes(i)); pushUndo(`${h.name}: adım`,[snap]); onData([k]);
-  if(isOn(k,h.id)&&!was) fxTick(k,h,true,false,false,el); else sfx('tick');
+  const o=el.isConnected?el:$(`.tchk[data-h="${CSS.escape(h.id)}"]`)||$(`#focus .f-e`); // satır yenilendiyse onay düğmesinden patlat
+  if(isOn(k,h.id)&&!was) fxTick(k,h,true,false,false,o); else sfx('tick');
 }
 
 /* ---------- olay dinleyicileri ---------- */

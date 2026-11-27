@@ -1,5 +1,6 @@
 'use strict';
-/* ===== Ay görünümü: tablo / takvim / bugün, boss, gün penceresi ===== */
+/* ===== Bugün sayfası, ay görünümü (tablo / takvim), boss, gün penceresi ===== */
+const mmode=()=>S.settings.view==='cal'?'cal':'table';
 let alertDismissed=false;
 const ringSVG=(attr='')=>`<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-bg" cx="32" cy="32" r="26"/><circle class="ring-fg" ${attr} cx="32" cy="32" r="26"/></svg>`;
 const EMPTY='<div class="empty"><p>Henüz alışkanlık yok. Takibe başlamak için ilkini ekle ya da hazır bir paket seç.</p><button class="btn" data-a="habits">＋ İlk alışkanlığını ekle</button></div>';
@@ -18,25 +19,21 @@ const trialEnd=h=>addDays(h.tstart,h.trial);
 const trialsDue=()=>active().filter(h=>h.trial&&h.tstart&&trialEnd(h)<=todayKey());
 function trialRate(h){ let s=0,c=0; for(let k=h.tstart,i=0;i<h.trial;i++,k=addDays(k,1)){ if(k>=todayKey()) break; if(schedK(h,k)){ s++; if(isOn(k,h.id)) c++; } } return s?c/s:0; }
 function renderMonth(){
-  const y=S.year, m=view, now=new Date(), isCur=now.getFullYear()===y&&now.getMonth()===m, mode=S.settings.view, b=bossOf(y,m);
+  const y=S.year, m=view, now=new Date(), isCur=now.getFullYear()===y&&now.getMonth()===m, mode=mmode(), b=bossOf(y,m);
   if(b.dead) S.bosses[`${y}-${m}`]=1; // önceden yenilmiş boss tekrar kutlanmasın
-  const fg=isCur&&!alertDismissed?forgotten():[], tr=isCur?trialsDue():[];
   $('#view').innerHTML=`<section>
     <div class="mhead">
-      <div class="rise"><span class="eyebrow">${y}${isCur?' · Bu ay':''}</span><h2>${MONTHS[m]}</h2></div>
+      <div class="rise msw"><button class="icon-btn" data-a="mprev" aria-label="Önceki ay">‹</button><div><span class="eyebrow">${isCur?'Bu ay':'Takvim'}</span><h2>${MONTHS[m]} <span>${y}</span></h2></div><button class="icon-btn" data-a="mnext" aria-label="Sonraki ay">›</button>${isCur?'':'<button class="btn ghost sm" data-a="mnow">Bu aya dön</button>'}</div>
       <div class="stats">
         <div class="stat glass rise" style="--i:1"><span class="label">Alışkanlık Sayısı</span><b class="big" id="stN">0</b><span class="sub">aktif alışkanlık</span></div>
         <div class="stat glass rise" style="--i:2"><span class="label">Tamamlanan Alışkanlık</span><b class="big" id="stTicks">0</b><span class="sub">/ <span id="stMax">0</span> planlı tik</span></div>
         <div class="stat glass rise ring-stat" style="--i:3">${ringSVG('id="ring"')}<div><span class="label">Bu Ay Tamamlanan</span><b class="big" id="stRate">%0</b><span class="sub" id="stSoFar"></span></div></div>
       </div>
     </div>
-    ${fg.length?`<div class="alerts rise">💡 <b>Biraz ihmal edildi:</b>${fg.map(([h,n])=>`<button class="chip" data-a="detail" data-id="${esc(h.id)}">${iconHTML(h.icon)} ${esc(h.name)} · ${n} gündür boş</button>`).join('')}<span style="flex:1"></span><button class="icon-btn sm" data-a="dismissAlert" aria-label="Uyarıyı kapat">✕</button></div>`:''}
-    ${tr.map(h=>{ const st=trialRate(h); return `<div class="alerts rise trial">🧪 <b>${esc(h.name)}</b> denemesi bitti: ${h.trial} günde %${fmt(st*100)} başarı. Devam mı?<span style="flex:1"></span><button class="btn sm" data-a="trialKeep" data-id="${esc(h.id)}">💪 Devam et</button><button class="btn ghost sm" data-a="trialDrop" data-id="${esc(h.id)}">📦 Bırak (arşivle)</button></div>`; }).join('')}
-    ${isCur?tourHTML():''}
     <div class="boss glass rise${b.dead?' dead':''}" style="--i:2" id="boss"><span class="boss-e" id="bossE">${b.e}</span>
       <div><span class="label">Ayın Boss'u · her tik 1 hasar · yenince +200 XP</span><b id="bossName">${b.name}${b.dead?' — YENİLDİ ✓':''}</b><div class="hp"><i id="bossHp"></i></div><span class="sub" id="bossTxt"></span></div></div>
     <div class="toolbar rise" style="--i:3">
-      <div class="seg" role="group" aria-label="Görünüm">${[['table','▦ Tablo'],['cal','🗓️ Takvim'],['today','⚡ Bugün']].map(([v,l])=>`<button data-a="vmode" data-v="${v}" class="${mode===v?'on':''}">${l}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Görünüm">${[['table','▦ Tablo'],['cal','🗓️ Takvim']].map(([v,l])=>`<button data-a="vmode" data-v="${v}" class="${mode===v?'on':''}">${l}</button>`).join('')}</div>
       ${mode==='table'?`<div class="chips">${[['','Tümü'],...CATS].map(([c,l])=>`<button class="chip${S.settings.cat===c?' on':''}" data-a="cat" data-c="${c}">${l}</button>`).join('')}</div>`:''}
       <span class="sp"></span><button class="btn ghost sm" data-a="share">📸 Paylaş</button><button class="btn ghost sm" data-a="print">🖨️ Yazdır</button>
     </div>
@@ -55,8 +52,8 @@ function renderMonth(){
 function renderMonthBody(intro){
   const box=$('#mbody'); if(!box) return;
   if(!active().length){ box.innerHTML=EMPTY; return; }
-  const mode=S.settings.view;
-  box.innerHTML=mode==='cal'?calHTML(intro):mode==='today'?todayHTML(intro):tableHTML(intro);
+  const mode=mmode();
+  box.innerHTML=mode==='cal'?calHTML(intro):tableHTML(intro);
   if(mode==='table'&&intro){
     setTimeout(()=>$('.grid')?.classList.remove('intro'),1600);
     const t=$('.dnum.today'), sc=$('.grid-scroll');
@@ -116,7 +113,6 @@ function refreshMonth(){
   $('#stSoFar').textContent=st.el&&st.el<st.days&&st.soPoss?`Bugüne kadar %${fmt(st.soRate*100,1)} · Ay sonu tahmini ~${fmt(Math.round(st.ticks+st.soRate*(st.possible-st.soPoss)))} tik`:st.el===st.days?'Ay tamamlandı':'Henüz başlamadı';
   active().forEach(h=>{ count($(`[data-hc="${CSS.escape(h.id)}"]`),st.per[h.id]); const s=$(`[data-sk="${CSS.escape(h.id)}"]`); if(s){ const c=streaks(h).cur; s.textContent=c>=2?`🔥${c}`:''; s.dataset.t=flameT(c); s.dataset.tip=`Seri: ${c} gün · Rekor: ${streaks(h).best}`; } });
   renderLeaders(st);
-  const tb=$(`.tab[data-go="${m}"] .tp i`); if(tb) tb.style.setProperty('--p',st.rate);
 }
 function renderLeaders(st){
   const ol=$('#lb'); if(!ol) return;
@@ -139,8 +135,8 @@ function renderLeaders(st){
   });
 }
 function updBoss(fromChange){
-  if(view>11||!$('#boss')) return;
-  const y=S.year, m=view, b=bossOf(y,m), key=`${y}-${m}`, box=$('#boss');
+  if(!$('#boss')) return;
+  const n=new Date(), y=view<12?S.year:n.getFullYear(), m=view<12?view:n.getMonth(), b=bossOf(y,m), key=`${y}-${m}`, box=$('#boss');
   $('#bossHp').style.width=b.left/b.hp*100+'%';
   $('#bossTxt').textContent=b.dead?`${b.dmg} hasar verdin — ${b.hp} HP'lik boss yere serildi!`:`${b.left} / ${b.hp} HP kaldı · ${b.dmg} hasar verdin`;
   if(fromChange&&!RM.matches){ const e=$('#bossE'); e.classList.remove('hit'); void e.offsetWidth; e.classList.add('hit'); }
@@ -161,47 +157,112 @@ function calHTML(intro){
   return `<div class="cal">${h}</div><p class="hint" style="padding:10px 6px 2px">Bir güne dokun: alışkanlıkları işaretle, not, ruh hâli ve fotoğraf ekle.</p>`;
 }
 
-/* --- bugün --- */
-function todayCard(h,i,k){
-  const on=isOn(k,h.id), pre=h.after&&hab(h.after), next=!!(pre&&isOn(k,pre.id)&&!on);
-  return `<div class="tcard${on?' on':''}${next?' next':''}" role="button" tabindex="0" data-a="tcard" data-h="${esc(h.id)}" style="--h:${h.hue};--i:${i}" aria-pressed="${on}" aria-label="${esc(h.name)}">${tcardInner(h,k,on,pre,next)}</div>`;
-}
-function tcardInner(h,k,on,pre,next){
-  const v=valOf(k,h.id), s=streaks(h).cur, T=tgtK(h,k), sd=subsOf(k,h.id);
-  return `<span class="ti">${iconHTML(h.icon)}</span><span class="tcheck">${CHECK}</span><b>${esc(h.name)}</b>
-    ${pre?`<span class="chain">${next?'👉 Sırada! ':'↳ '}${esc(pre.name)} sonrası</span>`:''}
-    <span class="sub tsub">${h.target?`${fmt(v)} / ${T} ${esc(h.unit)}${T>h.target?' 📈':''}`:h.subs.length&&!on?`${sd.length}/${h.subs.length} adım`:on?'Tamamlandı 🎉':'Dokun ve tamamla'}${h.weekly?` · haftada ${h.weekly}`:''}${s>=2?` · <span class="streak" data-t="${flameT(s)}">🔥${s}</span>`:''}</span>
-    ${h.subs.length?`<div class="subs">${h.subs.map((x,i)=>`<button type="button" class="sub-i${sd.includes(i)?' on':''}" data-a="tsub" data-h="${esc(h.id)}" data-i="${i}">${sd.includes(i)?'☑':'☐'} ${esc(x)}</button>`).join('')}</div>`:''}
-    ${h.target?`<div class="tbar"><i style="width:${Math.min(100,v/T*100)}%"></i></div><div class="trow"><button class="btn ghost sm" data-a="tdec" data-h="${esc(h.id)}" aria-label="${stepOf(h)} azalt">−${fmt(stepOf(h))}</button><button class="btn ghost sm" data-a="tinc" data-h="${esc(h.id)}" aria-label="${stepOf(h)} artır">＋${fmt(stepOf(h))}</button><button class="btn ghost sm" data-a="tval" data-h="${esc(h.id)}" aria-label="Değer gir">✎</button></div>`:''}
-    ${h.timer?`<div class="trow"><button class="btn ghost sm" data-a="timer" data-h="${esc(h.id)}">▶ ${h.timer} dk zamanlayıcı</button></div>`:''}`;
-}
-function questStrip(k){ return questsFor(k).map(q=>`<span class="quest${q.ok()?' done':''}">${q.e} ${esc(q.text)}<span class="qx">${q.ok()?'✓':'+20 XP'}</span></span>`).join(''); }
+/* --- bugün sayfası (açılış ekranı) --- */
 // zincirdeki alışkanlıklar öncekinin hemen arkasına dizilir
 function chainOrder(list){
   const out=[], seen=new Set(), add=h=>{ if(seen.has(h.id)) return; seen.add(h.id); out.push(h); list.filter(x=>x.after===h.id).forEach(add); };
   list.filter(h=>!h.after||!list.some(x=>x.id===h.after)).forEach(add); list.forEach(add); return out;
 }
 const daySub=ds=>`${ds.c}/${ds.s} planlı alışkanlık tamamlandı${ds.vac?' · 🏝️ Tatil/hasta modu':ds.joker?' · 🃏 Joker gün':''}`;
-function todayHTML(){
-  const now=new Date();
-  if(S.year!==now.getFullYear()||view!==now.getMonth()) return `<div class="empty"><p>“Bugün” görünümü yalnızca içinde bulunduğun ay için çalışır.</p><button class="btn" data-a="goToday">⚡ Bugüne git</button></div>`;
-  const k=todayKey(), ds=dayStat(k), hs=active(), sc=hs.filter(h=>schedK(h,k)), bonus=hs.filter(h=>!schedK(h,k)), slotted=sc.some(h=>h.slot);
-  let i=0; const grp=(list,title,slot)=>list.length?`${title?`<div class="tsec">${title}${slot&&list.some(h=>!isOn(k,h.id))?`<button class="btn ghost sm" data-a="routine" data-slot="${slot}">▶ Rutini başlat</button>`:''}</div>`:''}${chainOrder(list).map(h=>todayCard(h,i++,k)).join('')}`:'';
-  const groups=SLOTS.map(([s,l])=>grp(sc.filter(h=>h.slot===s),l,s)).join('')+grp(sc.filter(h=>!h.slot),slotted?'✨ Gün içinde':'')+grp(bonus,'Bonus · bugün planlı değil');
-  return `<div class="today-hero">${ringSVG(`id="tRing" style="stroke-dashoffset:${C*(1-ds.p)}"`)}<div style="flex:1;min-width:180px"><span class="eyebrow">Bugün</span><h3>${now.getDate()} ${MONTHS[now.getMonth()]}, ${DAYLONG[now.getDay()]}</h3><span class="sub" id="tSub">${daySub(ds)}</span>
-      <div class="trow" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-a="focus">🎯 Odak modu</button><button class="btn ghost sm" data-a="breath">🧘 Nefes</button><button class="btn ghost sm" data-a="day" data-k="${k}">📝 Not / ruh hâli</button></div></div>
-      <div id="petMini">${petMini()}</div></div>
-    <div class="qstrip" id="qStrip">${questStrip(k)}</div>
-    <div class="tgrid">${groups}</div>`;
+function todayGroups(k){
+  const hs=active(), sc=hs.filter(h=>schedK(h,k)), bonus=hs.filter(h=>!schedK(h,k)), slotted=sc.some(h=>h.slot);
+  const g=SLOTS.map(([s,l])=>({slot:s,title:l,list:chainOrder(sc.filter(h=>h.slot===s))}));
+  g.push({slot:'',title:slotted?'✨ Gün içinde':'Bugün',list:chainOrder(sc.filter(h=>!h.slot))});
+  g.push({slot:null,title:'Bonus · bugün planlı değil',list:bonus});
+  return g.filter(x=>x.list.length);
 }
-function updToday(){
-  const k=todayKey(), ds=dayStat(k);
-  $$('.tcard').forEach(el=>{ const h=hab(el.dataset.h); if(!h) return; const t=document.createElement('div'); t.innerHTML=todayCard(h,0,k); const n=t.firstElementChild;
-    el.className=n.className; el.setAttribute('aria-pressed',n.getAttribute('aria-pressed')); el.innerHTML=n.innerHTML; });
+const nextHabit=k=>todayGroups(k).filter(g=>g.slot!==null).flatMap(g=>g.list).find(h=>!isOn(k,h.id));
+function rowMeta(h,k,on,isNext){
+  const v=valOf(k,h.id), T=tgtK(h,k), s=streaks(h).cur, sd=subsOf(k,h.id), pre=h.after&&hab(h.after), t=S.times[k]?.[h.id], parts=[];
+  if(isNext) parts.push('<b class="nx">Sırada</b>');
+  if(h.target) parts.push(`${nf(v)} / ${nf(T)} ${esc(h.unit)}${T>h.target?' 📈':''}`);
+  else if(h.subs.length&&!on) parts.push(`${sd.length}/${h.subs.length} adım`);
+  else if(on) parts.push(t?`Tamamlandı · ${t}`:'Tamamlandı');
+  if(pre&&!on) parts.push(`↳ ${esc(pre.name)} sonrası`);
+  if(h.weekly) parts.push(`haftada ${h.weekly}`);
+  if(s>=2) parts.push(`<span class="streak" data-t="${flameT(s)}">🔥${s}</span>`);
+  return parts.join(' · ');
+}
+function rowInner(h,k,on,isNext){
+  const T=tgtK(h,k), v=valOf(k,h.id), sd=subsOf(k,h.id), st=stepOf(h);
+  return `<div class="trw-t"><b>${esc(h.name)}</b><span class="sub">${rowMeta(h,k,on,isNext)}</span>
+      ${h.subs.length?`<div class="subs-r">${h.subs.map((x,i)=>`<button type="button" class="sub-i${sd.includes(i)?' on':''}" data-a="tsub" data-h="${esc(h.id)}" data-i="${i}">${sd.includes(i)?'☑':'☐'} ${esc(x)}</button>`).join('')}</div>`:''}</div>
+    ${h.target?`<div class="trw-n"><span class="track"><i style="--h:${h.hue};width:${Math.min(100,v/T*100)}%"></i></span><button class="mini-btn" data-a="tdec" data-h="${esc(h.id)}" aria-label="${st} azalt">−</button><button class="mini-btn wide" data-a="tinc" data-h="${esc(h.id)}" aria-label="${st} artır">＋${nf(st)}</button></div>`:''}
+    ${h.timer?`<button class="icon-btn sm" data-a="timer" data-h="${esc(h.id)}" aria-label="${h.timer} dakikalık zamanlayıcı" data-tip="${h.timer} dk zamanlayıcı">▶</button>`:''}`;
+}
+const chkInner=(h,k,on)=>h.target&&!on?`<span class="tchk-p">%${Math.round(Math.min(1,valOf(k,h.id)/tgtK(h,k))*100)}</span>`:CHECK;
+const chkLabel=(h,on)=>`${h.target?'Değer gir: ':on?'İşareti kaldır: ':'Tamamla: '}${h.name}`;
+function todayRow(h,k,i,nx){
+  const on=isOn(k,h.id), isNext=nx===h;
+  return `<div class="trw${on?' on':''}${isNext?' next':''}" data-h="${esc(h.id)}" style="--h:${h.hue};--i:${i}">
+    <button class="trw-i" data-a="detail" data-id="${esc(h.id)}" aria-label="${esc(h.name)} ayrıntıları">${iconHTML(h.icon)}</button>
+    <div class="trw-c">${rowInner(h,k,on,isNext)}</div>
+    <button class="tchk${on?' on':''}" data-a="tcard" data-h="${esc(h.id)}" aria-pressed="${on}" aria-label="${esc(chkLabel(h,on))}">${chkInner(h,k,on)}</button></div>`;
+}
+function todayListHTML(k){
+  if(!active().length) return EMPTY;
+  const nx=nextHabit(k); let i=0;
+  return todayGroups(k).map(g=>`<div class="tgrp"><div class="tgrp-h"><span>${g.title}</span><span class="tgrp-r">${g.slot&&g.list.some(h=>!isOn(k,h.id))?`<button class="btn ghost sm" data-a="routine" data-slot="${g.slot}">▶ Rutini başlat</button>`:''}<span class="cnt">${g.list.filter(h=>isOn(k,h.id)).length} / ${g.list.length}</span></span></div>${g.list.map(h=>todayRow(h,k,i++,nx)).join('')}</div>`).join('');
+}
+function nextCardHTML(k){
+  if(!active().length) return '';
+  const nx=nextHabit(k), ds=dayStat(k);
+  if(!nx) return `<div class="next-card done"><small>BUGÜN</small><b>${ds.s?'Hepsi tamam! 🎉':'Planlı alışkanlık yok'}</b><span class="sub">${ds.s?'Mükemmel bir gün çıkardın.':'Dinlen ya da bonus bir alışkanlık yap.'}</span></div>`;
+  return `<div class="next-card"><small>SIRADA</small><b>${iconHTML(nx.icon)} ${esc(nx.name)}</b><button class="btn sm" data-a="focus">🎯 Odak modunu başlat</button></div>`;
+}
+function questsHTML(k){
+  const qs=questsFor(k); if(!qs.length) return '<p class="hint">Görevler için önce alışkanlık ekle.</p>';
+  return qs.map(q=>{ const ok=q.ok(), pr=q.prog&&!ok?q.prog():''; return `<div class="qrow${ok?' ok':''}"><span class="qe">${q.e}</span><span class="qt">${esc(q.text)}</span><span class="qx">${ok?'✓':pr||'+20'}</span></div>`; }).join('');
+}
+function weekHTML(){
+  const tk=todayKey(), mon=mondayOf(tk);
+  return [...Array(7)].map((_,i)=>{ const k=addDays(mon,i), ds=dayStat(k), fut=k>tk, [,m,d]=pk(k);
+    return `<button class="${k===tk?'now':''}" data-a="day" data-k="${k}"${fut?' disabled':''} data-tip="${d} ${MONTHS[m]}${fut?'':`\n${ds.c}/${ds.s} tamamlandı`}"><i style="--p:${fut?0:ds.p.toFixed(2)}"></i>${DAYN[wdK(k)]}</button>`; }).join('');
+}
+const heroSub=ds=>ds.s?(ds.perfect?'Mükemmel gün! Hepsini bitirdin. 🏆':`Mükemmel gün için ${ds.s-ds.c} alışkanlık kaldı${ds.vac?' · 🏝️ Tatil modu':ds.joker?' · 🃏 Joker gün':''}`):(active().length?'Bugün planlı alışkanlık yok':'Başlamak için bir alışkanlık ekle');
+function renderToday(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), k=todayKey(), ds=dayStat(k), b=bossOf(y,m), fg=!alertDismissed?forgotten():[], tr=trialsDue();
+  if(b.dead) S.bosses[`${y}-${m}`]=1; // önceden yenilmiş boss tekrar kutlanmasın
+  $('#view').innerHTML=`<section class="tpage">
+    ${tourHTML()}
+    ${fg.length?`<div class="alerts rise">💡 <b>Biraz ihmal edildi:</b>${fg.map(([h,n])=>`<button class="chip" data-a="detail" data-id="${esc(h.id)}">${iconHTML(h.icon)} ${esc(h.name)} · ${n} gündür boş</button>`).join('')}<span style="flex:1"></span><button class="icon-btn sm" data-a="dismissAlert" aria-label="Uyarıyı kapat">✕</button></div>`:''}
+    ${tr.map(h=>`<div class="alerts rise trial">🧪 <b>${esc(h.name)}</b> denemesi bitti: ${h.trial} günde %${fmt(trialRate(h)*100)} başarı. Devam mı?<span style="flex:1"></span><button class="btn sm" data-a="trialKeep" data-id="${esc(h.id)}">💪 Devam et</button><button class="btn ghost sm" data-a="trialDrop" data-id="${esc(h.id)}">📦 Bırak (arşivle)</button></div>`).join('')}
+    <div class="tp-grid">
+      <div class="tp-main">
+        <div class="hero glass rise" style="--i:1">
+          <div class="hero-ring">${ringSVG(`id="tRing" style="stroke-dashoffset:${C*(1-ds.p)}"`)}<b id="tPct">%${Math.round(ds.p*100)}</b></div>
+          <div class="hero-t"><b id="tDone">${ds.c} / ${ds.s} tamamlandı</b><span class="sub" id="tSub">${heroSub(ds)}</span>
+            <div class="hero-b"><button class="btn ghost sm" data-a="day" data-k="${k}">📝 Not / ruh hâli</button><button class="btn ghost sm" data-a="breath">🧘 Nefes</button></div></div>
+          <div id="nextCard">${nextCardHTML(k)}</div>
+        </div>
+        <div id="tList" class="rise" style="--i:2">${todayListHTML(k)}</div>
+      </div>
+      <aside class="tp-side">
+        <div class="card glass rise" style="--i:2"><div class="chead"><h3>Günün görevleri</h3><span class="sub">her biri +20 XP</span></div><div id="qList" class="qlist">${questsHTML(k)}</div></div>
+        <div class="card glass rise" style="--i:3"><div class="chead"><h3>Bu hafta</h3></div><div class="week7" id="week7">${weekHTML()}</div></div>
+        <div class="boss glass rise${b.dead?' dead':''}" style="--i:4" id="boss"><span class="boss-e" id="bossE">${b.e}</span><div><span class="label">Ayın boss'u · yenince +200 XP</span><b id="bossName">${b.name}</b><div class="hp"><i id="bossHp"></i></div><span class="sub" id="bossTxt"></span></div></div>
+        <figure class="quote glass rise" style="--i:5" id="quote">${quoteInner()}</figure>
+        <div id="petMini" class="rise" style="--i:6">${petMini()}</div>
+      </aside>
+    </div></section>`;
+  later(()=>updBoss(false));
+}
+// veri değişince sayfayı yeniden çizmeden günceller (animasyonlar ve tıklanan düğme yerinde kalır)
+function updTodayPage(){
+  const k=todayKey(), ds=dayStat(k), list=$('#tList'); if(!list) return;
+  const groups=todayGroups(k), nx=nextHabit(k), want=groups.flatMap(g=>g.list).map(h=>h.id).join(','), have=$$('.trw',list).map(r=>r.dataset.h).join(',');
+  if(want!==have||!active().length) list.innerHTML=todayListHTML(k);
+  else {
+    $$('.trw',list).forEach(r=>{ const h=hab(r.dataset.h), on=isOn(k,h.id), isNext=nx===h, c=r.querySelector('.tchk');
+      r.className=`trw${on?' on':''}${isNext?' next':''}`; r.querySelector('.trw-c').innerHTML=rowInner(h,k,on,isNext);
+      c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); c.setAttribute('aria-label',chkLabel(h,on)); c.innerHTML=chkInner(h,k,on); });
+    $$('.tgrp .cnt',list).forEach((c,i)=>{ const g=groups[i]; if(g) c.textContent=`${g.list.filter(h=>isOn(k,h.id)).length} / ${g.list.length}`; });
+  }
   const r=$('#tRing'); if(r) r.style.strokeDashoffset=C*(1-ds.p);
-  const s=$('#tSub'); if(s) s.textContent=daySub(ds);
-  const q=$('#qStrip'); if(q) q.innerHTML=questStrip(k);
+  $('#tPct').textContent=`%${Math.round(ds.p*100)}`; $('#tDone').textContent=`${ds.c} / ${ds.s} tamamlandı`; $('#tSub').textContent=heroSub(ds);
+  $('#nextCard').innerHTML=nextCardHTML(k); $('#qList').innerHTML=questsHTML(k); $('#week7').innerHTML=weekHTML();
   const pm=$('#petMini'); if(pm) pm.innerHTML=petMini();
+  updBoss(true);
 }
 
 /* --- değişiklik ve efektler --- */
@@ -278,8 +339,9 @@ function updVal(){ if(!VK) return; const T=tgtK(VK.h,VK.k), v=valNow(); $('#valB
 function saveVal(v){ if(!VK) return; const {k,h,origin}=VK; VK=null; $('#xDlg').close(); changeHabit(k,h,'set',origin&&origin.isConnected?origin:null,v); }
 
 /* --- ayın sözü --- */
-const qKey=()=>`${S.year}-${view}`;
-const isCurMonth=()=>{ const n=new Date(); return S.year===n.getFullYear()&&view===n.getMonth(); };
+const qMon=()=>view<12?view:new Date().getMonth();
+const qKey=()=>`${S.year}-${qMon()}`;
+const isCurMonth=()=>{ const n=new Date(); return S.year===n.getFullYear()&&qMon()===n.getMonth(); };
 function smartPool(){ // karışık tonda son 7 güne göre: zor haftada sert, çok iyi haftada tebrik sözü
   if(!isCurMonth()||S.settings.qtone!=='karisik') return null;
   let s=0,c=0; for(let i=1;i<=7;i++){ const ds=dayStat(addDays(todayKey(),-i)); s+=ds.s; c+=ds.c; }
@@ -288,7 +350,7 @@ function smartPool(){ // karışık tonda son 7 güne göre: zor haftada sert, �
 // Günün sözü: tarihten seçilir, her gün değişir; ↻ ile kaydırılır
 function quoteText(){
   if(S.quotes[qKey()]!=null) return [S.quotes[qKey()],''];
-  if(!isCurMonth()) return [QUOTES[view],''];
+  if(!isCurMonth()) return [QUOTES[qMon()],''];
   const sp=smartPool(), pool=sp?sp[1]:quotePool(), q=pool[(hash(todayKey())+S.settings.qshift)%pool.length];
   return [q,sp?(sp[0]==='zor'?'Zor bir hafta — biraz sert konuşalım 🔥':'Harika gidiyorsun — sana özel seçildi 🌟'):''];
 }
