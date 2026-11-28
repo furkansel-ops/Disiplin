@@ -1,5 +1,5 @@
 'use strict';
-/* ===== Söz havuzu: "Günün sözü" her gün değişir; ton (yumuşak / karışık / sert) ayardan seçilir ===== */
+/* ===== Söz havuzu: "Günün sözü" her gün bütün havuzdan kendiliğinden seçilir ===== */
 const QUOTES_CLASSIC=[
   'Ne kadar yavaş gittiğin önemli değil, yeter ki durma. — Konfüçyüs',
   'Bir ağaç dikmenin en iyi zamanı yirmi yıl önceydi. İkinci en iyi zamanı şimdi. — Çin Atasözü',
@@ -74,8 +74,4 @@ const QUOTES_HARD=[
   'Başarı, kimse bakmazken yaptıklarındır.',
   'Rahatına düşkün olan, hayallerine küs kalır.',
   'Kalk. Yap. Tekrarla.'];
-const QTONES=[['yumusak','🌿 Yumuşak'],['karisik','⚖️ Karışık'],['sert','🔥 Sert']];
-function quotePool(){
-  const soft=[...QUOTES,...QUOTES_TOUGH,...QUOTES_CHEER,...QUOTES_CLASSIC], t=S.settings.qtone;
-  return t==='sert'?QUOTES_HARD:t==='yumusak'?soft:[...soft,...QUOTES_HARD];
-}
+const quotePool=()=>[...QUOTES,...QUOTES_TOUGH,...QUOTES_CHEER,...QUOTES_CLASSIC,...QUOTES_HARD];

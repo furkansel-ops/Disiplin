@@ -104,7 +104,6 @@ const A={
   tval:el=>openVal(todayKey(),hab(el.dataset.h),el.closest('.tcard')),
   vadd:el=>{ $('#valIn').value=String(Math.round(Math.max(0,valNow()+(+el.dataset.v))*100)/100); updVal(); sfx('tick'); },
   vfill:()=>{ if(VK) saveVal(Math.max(valNow(),tgtK(VK.h,VK.k))); }, vzero:()=>saveVal(0), vsave:()=>saveVal(valNow()),
-  qtone:el=>{ S.settings.qtone=el.dataset.t; delete S.quotes[qKey()]; save(); swapQuote(); sfx('tick'); },
   tinc:el=>changeHabit(todayKey(),hab(el.dataset.h),'inc',el.closest('.tcard')),
   tdec:el=>changeHabit(todayKey(),hab(el.dataset.h),'dec',el.closest('.tcard')),
   mood:el=>{ const n=noteOf(dayK), v=+el.dataset.v; n.mood=n.mood===v?0:v; cleanNote(dayK); onData([dayK]); if(n.mood) sfx('tick'); },

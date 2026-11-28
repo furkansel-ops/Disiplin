@@ -281,7 +281,7 @@ function saveVal(v){ if(!VK) return; const {k,h,origin}=VK; VK=null; $('#xDlg').
 const qKey=()=>`${S.year}-${view}`;
 const isCurMonth=()=>{ const n=new Date(); return S.year===n.getFullYear()&&view===n.getMonth(); };
 function smartPool(){ // karışık tonda son 7 güne göre: zor haftada sert, çok iyi haftada tebrik sözü
-  if(!isCurMonth()||S.settings.qtone!=='karisik') return null;
+  if(!isCurMonth()) return null;
   let s=0,c=0; for(let i=1;i<=7;i++){ const ds=dayStat(addDays(todayKey(),-i)); s+=ds.s; c+=ds.c; }
   if(s<7) return null; const r=c/s; return r<.4?['zor',QUOTES_HARD]:r>.85?['süper',QUOTES_CHEER]:null;
 }
@@ -295,7 +295,6 @@ function quoteText(){
 function quoteInner(){
   const [q,why]=quoteText(), i=q.lastIndexOf(' — '), txt=i>0?q.slice(0,i):q, au=i>0?q.slice(i+3):'', cur=isCurMonth();
   return `<span class="eyebrow">${cur?'Günün Sözü':'Ayın Motivasyon Sözü'}</span><blockquote>${esc(txt)}</blockquote>${au?`<figcaption>— ${esc(au)}</figcaption>`:''}${why?`<span class="sub">${why}</span>`:''}
-    ${cur?`<div class="qtone" role="group" aria-label="Söz tonu">${QTONES.map(([t,l])=>`<button class="chip${S.settings.qtone===t?' on':''}" data-a="qtone" data-t="${t}">${l}</button>`).join('')}</div>`:''}
     <div class="qtools"><button class="icon-btn sm" data-a="qshuffle" aria-label="Başka bir söz" data-tip="Başka bir söz">↻</button><button class="icon-btn sm" data-a="qedit" aria-label="Sözü düzenle" data-tip="Kendi sözünü yaz">✎</button></div>`;
 }
 function swapQuote(){ const f=$('#quote'); if(!f) return; f.innerHTML=quoteInner(); f.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:dur(420),easing:'cubic-bezier(.2,.8,.2,1)'}); }

@@ -108,7 +108,7 @@ function normHabit(h,i){
     step:clampInt(h.step,0,1000,0),stepMax:clampInt(h.stepMax,0,10000,0),pstart:DK.test(h.pstart||'')?h.pstart:'',
     inc:clampInt(h.inc,0,10000,0),trial:clampInt(h.trial,0,365,0),tstart:DK.test(h.tstart||'')?h.tstart:'',created:DK.test(h.created||'')?h.created:''};
 }
-function defaultSettings(){ return {sound:true,ambient:true,reminder:'',view:'table',cat:'',backupRemind:true,qtone:'karisik',qshift:0}; }
+function defaultSettings(){ return {sound:true,ambient:true,reminder:'',view:'table',cat:'',backupRemind:true,qshift:0}; }
 function mkHabits(list){ return list.map(([name,icon,o={}],i)=>normHabit({id:uid(),name,icon,hue:HUES[i%HUES.length],...o},i)); }
 // Excel şablonundaki alışkanlıklar: örnek veride ve kurulum önerilerinde kullanılır
 const DEFAULT_HABITS=[["05.00'da Uyan",'⏰',{cat:'saglik',diff:3,slot:'sabah'}],['Yürüyüşe Çık','🏃',{cat:'saglik',slot:'sabah'}],['Kahvaltı Yap','🥪',{cat:'saglik',slot:'sabah'}],['Kitap Oku','📕',{cat:'zihin',diff:2,timer:20,slot:'aksam'}],
@@ -185,7 +185,7 @@ function validate(o){
   const settings={sound:st.sound!==undefined?!!st.sound:def.sound,ambient:st.ambient!==undefined?!!st.ambient:def.ambient,
     reminder:typeof st.reminder==='string'&&/^\d\d:\d\d$/.test(st.reminder)?st.reminder:'',
     view:['table','cal','today'].includes(st.view)?st.view:'table',cat:CATS.some(c=>c[0]===st.cat)?st.cat:'',backupRemind:st.backupRemind!==undefined?!!st.backupRemind:true,
-    qtone:['yumusak','karisik','sert'].includes(st.qtone)?st.qtone:'karisik',qshift:clampInt(st.qshift,0,1e6,0)};
+    qshift:clampInt(st.qshift,0,1e6,0)};
   habits.forEach(h=>{ if(!ids.has(h.after)||h.after===h.id) h.after=''; });
   return {v:2,theme:THEMES.some(t=>t[0]===o.theme)?o.theme:'dark',accent:typeof o.accent==='string'&&/^#[0-9a-f]{6}$/i.test(o.accent)?o.accent:'',
     year:Number.isInteger(o.year)&&o.year>1970&&o.year<3000?o.year:new Date().getFullYear(),

@@ -51,8 +51,8 @@ python -m http.server 5173
 
 **Günün sözü**
 - Her gün değişen söz. Havuzda 90'dan fazla söz var.
-- Ton seçimi: 🌿 Yumuşak · ⚖️ Karışık · 🔥 Sert. Sert modda acımasız, tokat gibi sözler çıkar.
-- Karışık modda kötü geçen bir haftadan sonra sözler kendiliğinden sertleşir.
+- Söz bütün havuzdan, yumuşak ve sert sözler karışık olarak kendiliğinden seçilir; seçim yapman gerekmez.
+- Kötü geçen bir haftadan sonra sözler kendiliğinden sertleşir.
 
 **Günlük**
 - Ruh hâli, enerji, stres ve uyku kaydı.
