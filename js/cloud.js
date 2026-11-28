@@ -102,7 +102,9 @@ function accountHTML(){
     body=`<div class="acc-grid">${items.map(([k,v,raw])=>`<div class="acc-item"><span>${k}</span><b>${raw?v:esc(v)}</b></div>`).join('')}</div>
     ${cErr?`<p class="note acc-err">⚠️ ${esc(cErr)}</p>`:''}
     <div class="acc-btns"><button type="button" class="btn" data-a="accSync"${!u||cBusy?' disabled':''}>${SVG_SYNC}Şimdi eşitle</button>${prov==='password'?'<button type="button" class="btn ghost" data-a="accPass">Şifre değiştir</button>':''}<button type="button" class="btn ghost acc-out" data-a="accOut">${SVG_OUT}Çıkış yap</button></div>
-    <p class="note">Değişikliklerin birkaç saniye içinde hesabına yedeklenir. Fotoğraflar ve sesli notlar bu cihazda kalır. Çıkış yapınca giriş sayfasına dönersin.</p>`;
+    <p class="note">Değişikliklerin birkaç saniye içinde hesabına yedeklenir. Fotoğraflar ve sesli notlar bu cihazda kalır. Çıkış yapınca giriş sayfasına dönersin.</p>
+    <div class="acc-danger"><span>Tehlikeli bölge</span><button type="button" class="btn ghost acc-out" data-a="accWipe"${!u?' disabled':''}>🗑 Tüm verileri sıfırla</button>
+    <p class="note">Bu cihazdaki ve hesabındaki tüm veriler (alışkanlıklar, işaretler, notlar, fotoğraflar, profiller) silinir, geri alınamaz.</p></div>`;
   }
   return `<div id="accBox"><h4>Hesap</h4>
     <div class="acc-card"><div class="acc-av">${esc(ini)}${u?.photoURL?`<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</div>
@@ -118,6 +120,22 @@ const CA={
     el.disabled=true; await cloudSync();
     try{ const {au,auth}=await fbLoad(); await au.signOut(auth); }catch(e){ toast('⚠️ '+authMsg(e)); el.disabled=false; return; }
     CM=null; saveCM(); location.replace('giris.html'); },
+  accWipe:async el=>{
+    const v=prompt('Bu cihazdaki ve hesabındaki TÜM verilerin silinecek: alışkanlıklar, işaretler, notlar, fotoğraflar, profiller, seviye. Geri alınamaz.\n\nOnaylamak için SIFIRLA yaz:');
+    // SIFIRLA, sıfırla, sifirla hepsi geçer
+    if(v===null) return; if(v.trim().toLocaleLowerCase('tr').replace(/i/g,'ı')!=='sıfırla'){ toast('Sıfırlama iptal edildi'); return; }
+    if(!cUser||cBusy){ toast('⚠️ Hesaba bağlanılamadı, biraz sonra tekrar dene'); return; }
+    // önce bulut: silinemezse yerelde de dokunma, yoksa sonraki eşitleme eski veriyi geri indirir
+    cBusy=true; el.disabled=true; clearTimeout(pushT);
+    try{ const {fs,db}=await fbLoad(), col=fs.collection(db,'users',CM.uid,'p'), ids=[];
+      (await fs.getDocs(col)).forEach(d=>ids.push(d.id)); await Promise.all(ids.map(id=>fs.deleteDoc(fs.doc(col,id)))); }
+    catch(e){ cBusy=false; el.disabled=false; toast('⚠️ Hesaptaki veriler silinemedi, internetini kontrol et'); return; }
+    for(const k of Object.keys(S.voice)) IDB.del(vKey(k)).catch(()=>{});
+    clearTimeout(saveT); for(const p of P.list) try{ localStorage.removeItem(dataKey(p.id)); }catch(e){}
+    P={active:'main',list:[{id:'main',name:'Ben'}]}; savePK();
+    CM.at={}; CM.dirty={}; CM.mod={}; CM.last=Date.now(); saveCM(); cBusy=false;
+    S=loadProfile('main'); $('#setDlg').close(); reloadActive(); toast('🗑 Tüm veriler silindi, baştan başlıyoruz');
+  },
 };
 
 // açılışta bağlan; geri dönünce ve internet gelince eşitle
