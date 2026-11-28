@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#11141d">
 <title>Alışkanlık Takvimi</title>
+<script>/* giriş zorunlu: bu cihazda oturum kaydı yoksa giriş sayfasına */ try{ if(!(JSON.parse(localStorage.getItem('aliskanlik-bulut'))||{}).uid) location.replace('giris.html'+location.hash); }catch(e){ location.replace('giris.html'); }</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -79,7 +80,6 @@
 <div id="wrapped" aria-modal="true" role="dialog" aria-label="Yıl özeti hikâyesi"></div>
 <div id="print"></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Hoş geldin"></div>
-<div id="login" role="dialog" aria-modal="true" aria-label="Giriş"></div>
 <div id="focus" role="dialog" aria-modal="true" aria-label="Odak modu"></div>
 <div id="breath" role="dialog" aria-modal="true" aria-label="Nefes egzersizi"></div>
 <div id="bkChip" role="status"><span>💾 7 gündür yedek almadın</span><button class="btn sm" data-a="json-out">Yedekle</button><button class="btn ghost sm" data-a="bkLater">Sonra</button></div>
@@ -95,6 +95,7 @@
 <script src="js/tools.js"></script>
 <script src="js/extra.js"></script>
 <script src="js/welcome.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/cloud.js"></script>
 <script src="js/main.js"></script>
 </body>

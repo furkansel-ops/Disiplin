@@ -282,6 +282,7 @@ function renderSettings(){
   const perm='Notification' in window?{granted:'açık ✅',denied:'engellendi',default:'sorulmadı'}[Notification.permission]:'desteklenmiyor';
   const acc=S.accent||getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
   $('#setForm').innerHTML=`<h3>Ayarlar</h3>
+    ${accountHTML()}
     <h4>Tema</h4><div class="themes">${THEMES.map(([t,l,c])=>`<button type="button" data-a="setTheme" data-t="${t}" class="${S.theme===t?'on':''}" style="background:${c};color:${['light','pastel'].includes(t)?'#222':'#fff'}">${l}</button>`).join('')}</div>
     <label class="toggle">🎨 Vurgu rengi<span style="display:flex;gap:6px;align-items:center"><input type="color" id="accentIn" value="${/^#[0-9a-f]{6}$/i.test(acc)?acc:'#8b7bff'}" aria-label="Vurgu rengi"><button type="button" class="btn ghost sm" data-a="accentReset">Varsayılan</button></span></label>
     <label class="toggle">🔊 Ses efektleri<input type="checkbox" data-s="sound"${S.settings.sound?' checked':''}></label>
@@ -289,7 +290,6 @@ function renderSettings(){
     <h4>Hatırlatıcı</h4>
     <label class="toggle">⏰ Günlük hatırlatma saati<input type="time" id="remIn" value="${S.settings.reminder}" aria-label="Hatırlatma saati"></label>
     <p class="note">Bildirim izni: <b>${perm}</b> ${'Notification' in window&&Notification.permission==='default'?'<button type="button" class="btn ghost sm" data-a="notifPerm">İzin ver</button>':''}<br>Hatırlatıcı uygulama açıkken çalışır (telefona yüklendiğinde de).</p>
-    ${accountHTML()}
     ${vacationHTML()}
     ${backupHTML()}
     <h4>Profiller</h4>
