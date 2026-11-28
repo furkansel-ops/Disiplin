@@ -275,7 +275,10 @@ async function selfTestAsync(st){ // aktarım paketinin gidiş-dönüşü (globa
 
 /* başlangıç */
 applyTheme(); $('#profName').textContent='👤 '+profName();
-render(); checkAch(true); checkLevel(true); updXP(false); checkQuests(); save();
-maybeOnboard(); autoReport(); startReminders(); registerSW(); handleHash(); checkLetters();
+render(); updXP(false); maybeOnboard(); handleHash();
+// ekrana ilk çizim gelsin, hesap ağırlıklı başlangıç işleri hemen ardından
+requestAnimationFrame(()=>setTimeout(()=>{ checkAch(true); checkLevel(true); updXP(false); checkQuests(); save(); autoReport(); startReminders(); registerSW(); checkLetters(); },0));
+// kapanan pencerelerin içeriği DOM'dan atılır: arka sayfa hafif kalır, sonraki pencereler ve stil hesapları hızlanır
+for(const id of ['habitDlg','setDlg','dayDlg','detailDlg','reportDlg','xDlg']){ const d=$('#'+id); d.addEventListener('close',()=>setTimeout(()=>{ if(!d.open) d.querySelector('form').replaceChildren(); },350)); }
 setTimeout(autoBackup,4000); setInterval(autoBackup,6*36e5);
 if(location.hash==='#test') selfTest();

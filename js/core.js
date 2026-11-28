@@ -81,7 +81,7 @@ const pk=k=>{ const [y,m,d]=k.split('-').map(Number); return [y,m-1,d]; };
 const dim=(y,m)=>new Date(y,m+1,0).getDate();
 const uid=()=>Math.random().toString(36).slice(2,10);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=(v,dec=0)=>v.toLocaleString('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const NF=[], fmt=(v,dec=0)=>(NF[dec]||(NF[dec]=new Intl.NumberFormat('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec}))).format(v); // biçimlendirici önbellekte: sayaç animasyonlarında her karede çağrılır
 const dur=ms=>RM.matches?0:ms;
 const later=fn=>requestAnimationFrame(()=>requestAnimationFrame(fn));
 const isObj=o=>!!o&&typeof o==='object'&&!Array.isArray(o);

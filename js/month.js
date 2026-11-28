@@ -67,7 +67,7 @@ function renderMonthBody(intro){
 /* --- tablo --- */
 function cellHTML(h,k,d,r,tk){
   const on=isOn(k,h.id), num=h.target>0, v=num?valOf(k,h.id):0, T=tgtK(h,k);
-  return `<button class="cell${on?' on':''}${schedK(h,k)?'':' off'}${k===tk?' today':''}${num?' num':''}" data-a="cell" data-k="${k}" data-h="${esc(h.id)}" style="--h:${h.hue};--r:${r};--c:${d};--f:${num?Math.min(1,v/T):0}" aria-pressed="${on}" aria-label="${esc(h.name)}, ${d} ${MONTHS[view]}${num?`, ${v}/${T}`:''}"${k>tk?' disabled':''}>${num?`<span class="nv">${v&&!on?fmt(v):''}</span>`:''}${CHECK}</button>`;
+  return `<button class="cell${on?' on':''}${schedK(h,k)?'':' off'}${k===tk?' today':''}${num?' num':''}" data-a="cell" data-k="${k}" data-h="${esc(h.id)}" style="--h:${h.hue};--r:${r};--c:${d};--f:${num?Math.min(1,v/T):0}" aria-pressed="${on}" aria-label="${esc(h.name)}, ${d} ${MONTHS[view]}${num?`, ${v}/${T}`:''}"${k>tk?' disabled':''}>${num?`<span class="nv">${v&&!on?fmt(v):''}</span>`:''}</button>`;
 }
 function noteBtn(k,d,tk){
   const n=S.notes[k], has=n&&(n.mood||n.text), ph=!!S.photos[k];

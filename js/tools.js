@@ -15,7 +15,7 @@ function hLi(h){
     <button type="button" class="mini-btn" data-a="harch" aria-label="Arşivle" data-tip="Arşivle (veriler korunur)">📦</button>
     <button type="button" class="mini-btn del" data-a="hdel" aria-label="Sil">🗑</button></div>
   <div class="hmore">
-    <div class="frow"><label>İkon</label><div class="picker">${pickerHTML(h.id)}</div></div>
+    <div class="frow"><label>İkon</label><div class="picker" data-pick="${esc(h.id)}"></div></div>
     <div class="frow"><label>Kendi emojin</label><input class="unit" data-f="icon" value="${h.icon.startsWith('i:')?'':esc(h.icon)}" maxlength="12" aria-label="Emoji"></div>
     <div class="frow"><label>Günler</label><div class="daych">${WEEK.map(w=>`<button type="button" class="${h.days.includes(w)?'on':''}" data-a="hday" data-w="${w}">${DAYN[w]}</button>`).join('')}</div></div>
     <div class="frow"><label>Kategori</label><select data-f="cat" aria-label="Kategori"><option value="">—</option>${CATS.map(([c,l])=>`<option value="${c}"${h.cat===c?' selected':''}>${l}</option>`).join('')}</select></div>
@@ -41,8 +41,10 @@ function renderHabitDlg(focusId){
     <h4>Hazır paketler</h4><div class="tpls">${Object.keys(TEMPLATES).map(t=>`<button type="button" class="chip" data-a="tpl" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>
     ${arch.length?`<h4>📦 Arşiv</h4><ul class="hlist">${arch.map(h=>`<li data-id="${esc(h.id)}" style="--h:${h.hue}"><div class="hrow"><span class="ibtn">${iconHTML(h.icon)}</span><span class="hi-name" style="padding:0 6px">${esc(h.name)}</span><button type="button" class="btn ghost sm" data-a="hrestore">↩ Geri getir</button><button type="button" class="mini-btn del" data-a="hdel" aria-label="Kalıcı sil">🗑</button></div></li>`).join('')}</ul>`:''}
     <footer><button class="btn" value="close">Bitti</button></footer>`;
-  if(focusId){ const li=$(`#hlist li[data-id="${CSS.escape(focusId)}"]`); if(li){ li.classList.add('open'); later(()=>li.scrollIntoView({block:'center'})); li.querySelector('.hi-name').focus(); } }
+  if(focusId){ const li=$(`#hlist li[data-id="${CSS.escape(focusId)}"]`); if(li){ openMore(li); later(()=>li.scrollIntoView({block:'center'})); li.querySelector('.hi-name').focus(); } }
 }
+// ⚙ paneli açılırken ikon seçici (≈70 düğme) o anda çizilir; pencere 8 alışkanlıkla ~600 düğme daha hafif açılır
+function openMore(li){ const p=li.querySelector('[data-pick]'); if(p&&!p.children.length) p.innerHTML=pickerHTML(p.dataset.pick); li.classList.add('open'); }
 function openHabits(focusId){ renderHabitDlg(focusId); const d=$('#habitDlg'); if(!d.open) d.showModal(); if(!focusId) $('#newName').focus(); }
 const habitOf=el=>hab(el.closest('li').dataset.id);
 $('#habitForm').addEventListener('input',e=>{
@@ -315,7 +317,7 @@ function registerSW(){ if('serviceWorker' in navigator&&location.protocol.starts
 
 /* araç eylemleri */
 const TA={
-  hmore:el=>el.closest('li').classList.toggle('open'),
+  hmore:el=>{ const li=el.closest('li'); if(li.classList.contains('open')) li.classList.remove('open'); else openMore(li); },
   hadd:()=>{ const nm=$('#newName'), name=nm.value.trim(); if(!name){ shake(nm); return; }
     const h=normHabit({id:uid(),name,icon:newIcon,hue:HUES[S.habits.length%HUES.length],created:todayKey()},S.habits.length);
     S.habits.push(h); hDirty=true; rev++; save();

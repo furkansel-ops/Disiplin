@@ -832,3 +832,11 @@ html{touch-action:manipulation}
 button,.cell,.tcard,.tab{-webkit-tap-highlight-color:transparent}
 .seg button{transition:background .25s,color .25s,box-shadow .25s}
 .chip{transition:background .2s,color .2s,border-color .2s}
+
+/* tablo hücresindeki ✓ CSS ile çizilir (hücre başına SVG yok); soldan sağa çizilme animasyonu korunur */
+.grid .cell::after{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;background:#fff;pointer-events:none;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  clip-path:inset(0 100% 0 0);transition:clip-path .35s cubic-bezier(.65,0,.35,1) .06s}
+.grid .cell.on::after{clip-path:inset(0 0 0 0)}
+@media (max-width:700px){.grid .cell::after{width:18px;height:18px}}
