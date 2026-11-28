@@ -289,6 +289,7 @@ function renderSettings(){
     <h4>Hatırlatıcı</h4>
     <label class="toggle">⏰ Günlük hatırlatma saati<input type="time" id="remIn" value="${S.settings.reminder}" aria-label="Hatırlatma saati"></label>
     <p class="note">Bildirim izni: <b>${perm}</b> ${'Notification' in window&&Notification.permission==='default'?'<button type="button" class="btn ghost sm" data-a="notifPerm">İzin ver</button>':''}<br>Hatırlatıcı uygulama açıkken çalışır (telefona yüklendiğinde de).</p>
+    ${accountHTML()}
     ${vacationHTML()}
     ${backupHTML()}
     <h4>Profiller</h4>
@@ -304,14 +305,16 @@ $('#setForm').addEventListener('change',e=>{
 });
 $('#setForm').addEventListener('input',e=>{
   if(e.target.id==='accentIn'){ S.accent=e.target.value; applyTheme(); save(); }
-  if(e.target.matches('[data-pname]')){ const v=e.target.value.trim(); if(!v) return; const p=P.list.find(x=>x.id===e.target.closest('.prow').dataset.id); p.name=v.slice(0,24); savePK(); $('#profName').textContent='👤 '+profName(); }
+  if(e.target.matches('[data-pname]')){ const v=e.target.value.trim(); if(!v) return; const p=P.list.find(x=>x.id===e.target.closest('.prow').dataset.id); p.name=v.slice(0,24); savePK(); cloudMark(p.id); $('#profName').textContent='👤 '+profName(); }
 });
 $('#setForm').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'){ e.preventDefault(); if(e.target.id==='newProf') TA.padd(); } });
 function switchProfile(id){
-  flush(); P.active=id; savePK(); S=loadProfile(id); rev++; undoStack.length=0; lastXP=null; questSeen=null;
+  flush(); P.active=id; savePK(); S=loadProfile(id); reloadActive(); toast(`👤 ${profName()} profiline geçildi`);
+}
+function reloadActive(){ // S değişti (profil geçişi, buluttan gelen veri): ekranı baştan kur
+  rev++; undoStack.length=0; lastXP=null; questSeen=null;
   applyTheme(); view=S.year===new Date().getFullYear()?new Date().getMonth():0;
-  $('#profName').textContent='👤 '+profName(); render(); updXP(); checkAch(true); checkLevel(true); checkQuests();
-  toast(`👤 ${profName()} profiline geçildi`); maybeOnboard();
+  $('#profName').textContent='👤 '+profName(); render(); updXP(); checkAch(true); checkLevel(true); checkQuests(); maybeOnboard();
 }
 function registerSW(){ if('serviceWorker' in navigator&&location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
@@ -375,6 +378,6 @@ const TA={
   pdel:el=>{ const id=el.closest('.prow').dataset.id, p=P.list.find(x=>x.id===id);
     if(!confirm(`"${p.name}" profili ve tüm verileri kalıcı olarak silinsin mi?`)) return;
     if(P.active===id) switchProfile('main'); // önce geç: geçiş eski profili kaydeder, sonra silinir
-    try{ localStorage.removeItem(dataKey(id)); }catch(e){}
+    try{ localStorage.removeItem(dataKey(id)); }catch(e){} cloudDelete(id);
     P.list=P.list.filter(x=>x.id!==id); savePK(); renderSettings(); toast('Profil silindi'); },
 };

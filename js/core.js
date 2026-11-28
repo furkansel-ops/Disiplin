@@ -200,15 +200,18 @@ const KEY='aliskanlik-takvimi-v1', PKEY='aliskanlik-profiller';
 const lsGet=k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } };
 const dataKey=id=>id==='main'?KEY:KEY+':'+id;
 let P=(()=>{ try{ const p=JSON.parse(lsGet(PKEY)); if(isObj(p)&&Array.isArray(p.list)&&p.list.length&&p.list.every(x=>x&&typeof x.id==='string'&&typeof x.name==='string')) return {active:p.list.some(x=>x.id===p.active)?p.active:p.list[0].id,list:p.list}; }catch(e){} return {active:'main',list:[{id:'main',name:'Ben'}]}; })();
+const lastJ={}; // profil başına en son yazılan JSON: değişmeyen veri yeniden yazılmaz, buluta da gönderilmez
 function loadProfile(id){
-  try{ const raw=lsGet(dataKey(id)); if(raw){ const s=validate(JSON.parse(raw)); if(s) return s; } }catch(e){}
-  return freshState();
+  let s=null; try{ const raw=lsGet(dataKey(id)); if(raw) s=validate(JSON.parse(raw)); }catch(e){}
+  s=s||freshState(); lastJ[id]=JSON.stringify(s); return s;
 }
+function writeProfile(id,s){ const j=JSON.stringify(s); localStorage.setItem(dataKey(id),j); lastJ[id]=j; }
 let S=loadProfile(P.active), rev=0, saveT, saveWarned=false;
 function savePK(){ try{ localStorage.setItem(PKEY,JSON.stringify(P)); }catch(e){} }
 function flush(){
   clearTimeout(saveT);
-  try{ localStorage.setItem(dataKey(P.active),JSON.stringify(S)); }
+  const id=P.active, j=JSON.stringify(S); if(j===lastJ[id]) return;
+  try{ localStorage.setItem(dataKey(id),j); lastJ[id]=j; if(typeof cloudMark==='function') cloudMark(id); }
   catch(e){ if(!saveWarned){ saveWarned=true; toast(e&&e.name==='QuotaExceededError'?'⚠️ Depolama dolu: bazı fotoğrafları sil veya JSON yedeği al!':'⚠️ Kaydedilemedi: tarayıcı depolaması kapalı. JSON yedeği al!'); } }
 }
 function save(){ clearTimeout(saveT); saveT=setTimeout(flush,200); }

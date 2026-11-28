@@ -18,7 +18,7 @@ function renderWelcome(){
     <div class="wz-feats"><div><span>✅</span><b>Takip et</b><small>Her gün tek dokunuşla</small></div><div><span>🎮</span><b>Seviye atla</b><small>XP, görevler, evcil dost</small></div><div><span>📈</span><b>Gelişimini gör</b><small>Grafikler ve içgörüler</small></div></div>
     <label class="wz-field">Sana nasıl seslenelim?<input id="wzName" maxlength="24" placeholder="Adın" value="${esc(WZ.name)}" autocomplete="given-name"></label>
     <div class="wz-btns"><button class="btn ghost" data-a="wzDemo">Önce örnek verilerle keşfet</button><button class="btn big-btn" data-a="wzNext">Başlayalım →</button></div>
-    <p class="hint">Hesap gerekmez · verilerin yalnızca bu cihazda saklanır.</p>`;
+    <p class="hint">Hesap gerekmez · verilerin bu cihazda saklanır. <button class="linkish" data-a="wzLogin">☁️ Hesabın var mı? Giriş yap</button></p>`;
   else if(st===1) body=`<h2>Neleri takip edelim?</h2><p class="sub">Dokunarak seç ya da kendininkini yaz. Sonra istediğin zaman değiştirebilirsin.</p>
     <div class="wz-packs"><span class="label">Hazır paketler</span>${Object.keys(TEMPLATES).map(t=>`<button class="chip" data-a="wzPack" data-t="${esc(t)}">＋ ${esc(t)}</button>`).join('')}</div>
     <div class="wz-sugg">${SUGG.map((s,i)=>`<button class="wz-h${WZ.sel.has(s.name)?' on':''}" data-a="wzToggle" data-i="${i}" aria-pressed="${WZ.sel.has(s.name)}"><span>${esc(s.icon)}</span>${esc(s.name)}</button>`).join('')}${[...WZ.sel.keys()].filter(n=>!SUGG.some(s=>s.name===n)).map(n=>`<button class="wz-h on" data-a="wzRm" data-n="${esc(n)}" aria-pressed="true"><span>${esc(WZ.sel.get(n).icon)}</span>${esc(n)} ✕</button>`).join('')}</div>

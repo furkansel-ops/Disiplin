@@ -100,7 +100,7 @@ function cleanNote(k){ const n=S.notes[k]; if(n&&!n.mood&&!n.text&&!n.energy&&!n
 
 /* eylemler */
 const A={
-  ...TA, ...XA, ...WA,
+  ...TA, ...XA, ...WA, ...CA,
   go:el=>go(+el.dataset.go),
   yprev:()=>setYear(S.year-1), ynext:()=>setYear(S.year+1),
   theme:el=>setTheme(['light','pastel'].includes(S.theme)?'dark':'light',el),

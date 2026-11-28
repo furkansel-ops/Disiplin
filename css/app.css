@@ -846,3 +846,8 @@ button,.cell,.tcard,.tab{-webkit-tap-highlight-color:transparent}
 .cell.on,.cell.on:hover{box-shadow:inset 0 -2px 0 rgba(0,0,0,.14)}
 .scrolling body::before{animation-play-state:paused}
 .scrolling .cell:hover:not(:disabled){transform:none}
+
+/* ===== hesap bölümü ===== */
+.acc-form{display:grid;gap:6px}
+.acc-form>.hi-name{border:1px solid var(--line,rgba(127,127,127,.25));border-radius:10px;padding:9px 11px;background:var(--cell);color:inherit;font:inherit}
+.linkish{background:none;border:0;padding:0;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer}
