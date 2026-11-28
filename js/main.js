@@ -36,17 +36,32 @@ function setYear(y){ const dir=y>S.year?1:-1; S.year=y; rev++; save(); $('#yLabe
 
 /* veri değiştiğinde ekranı güncelle */
 function onData(keys){
-  rev++; save(); updXP(true);
+  rev++; save();
+  // dokunulan yer aynı karede güncellenir; geri kalan ağır işler sonraki karelere ertelenir (bkz. lateUpdate)
   if(view<12){
     const mode=S.settings.view;
-    if(mode==='table'&&$('.grid')){ keys.forEach(k=>{ $$(`.cell[data-k="${k}"]`).forEach(updCell); updNote(k); const dn=$(`.dnum[data-k="${k}"]`); if(dn){ dn.classList.toggle('joker',!!S.jokers[k]); dn.classList.toggle('frz',!!S.freezes[k]); } }); }
+    if(mode==='table'&&$('.grid')){ keys.forEach(k=>{ $$(`.cell[data-k="${k}"]`).forEach(updCell); updNote(k); updDP(k); const dn=$(`.dnum[data-k="${k}"]`); if(dn){ dn.classList.toggle('joker',restK(k)); dn.classList.toggle('frz',!!S.freezes[k]); } }); }
     else if(mode==='today'&&$('.tcard')) updToday();
     else renderMonthBody(false);
-    refreshMonth(); updBoss(true);
-  } else render();
-  checkQuests(); if(FQ) renderFocus(); updTour();
+  }
+  if(FQ) renderFocus();
   if($('#dayDlg').open) renderDay();
+  lateUpdate();
   clearTimeout(onData.t); onData.t=setTimeout(()=>{ autoGoals(); checkAch(false); checkLevel(false); },450);
+}
+// Ağır güncellemeleri ilk kare çizildikten sonra küçük parçalar hâlinde çalıştır: her parça arasında
+// tarayıcı kare çizebilir, böylece 120 Hz'de bile dokunuş animasyonu ve konfeti takılmaz. Art arda dokunuşlar birleşir.
+let lateState=0, lateAgain=false; // 0 boşta · 1 planlandı · 2 çalışıyor
+function lateUpdate(){
+  if(lateState===1) return;
+  if(lateState===2){ lateAgain=true; return; }
+  lateState=1;
+  requestAnimationFrame(()=>setTimeout(()=>{
+    lateState=2;
+    const steps=[()=>updXP(true),()=>{ if(view<12){ refreshMonth(); updBoss(true); } else render(); },()=>{ checkQuests(); updTour(); }];
+    const next=()=>{ if(steps.length){ steps.shift()(); setTimeout(next,0); return; } lateState=0; if(lateAgain){ lateAgain=false; lateUpdate(); } };
+    next();
+  },0));
 }
 
 /* geri alma */

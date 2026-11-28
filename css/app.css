@@ -823,3 +823,12 @@ body.wz-open{overflow:hidden}
 .vquick{justify-content:center}
 .vquick .chip{font-size:15px;padding:9px 14px}
 .tcard .trow .btn{min-width:44px}
+
+/* ===== Akıcılık: tablet GPU'sunu en çok yoran buzlu cam bulanıklığı yalnızca yapışkan üst çubukta ===== */
+.glass{backdrop-filter:none;-webkit-backdrop-filter:none;background:color-mix(in srgb,var(--solid) 84%,transparent)}
+.top.glass,.tabs-wrap.glass{backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
+dialog::backdrop{backdrop-filter:none;background:rgba(5,6,12,.62)}
+html{touch-action:manipulation}
+button,.cell,.tcard,.tab{-webkit-tap-highlight-color:transparent}
+.seg button{transition:background .25s,color .25s,box-shadow .25s}
+.chip{transition:background .2s,color .2s,border-color .2s}

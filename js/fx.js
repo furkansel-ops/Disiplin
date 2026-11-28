@@ -36,13 +36,18 @@ function floatText(x,y,text,cls=''){
 /* konfeti / parçacık */
 const cv=$('#fx'), cx=cv.getContext('2d'); let parts=[], running=false;
 const CONF=['#8b7bff','#3dd6c6','#3ddc97','#ffcc66','#ff6b81','#60a5fa'];
-function sizeCanvas(c,ctx){ const r=devicePixelRatio||1; c.width=innerWidth*r; c.height=innerHeight*r; ctx.setTransform(r,0,0,r,0,0); }
-function run(){ if(!running){ running=true; requestAnimationFrame(tick); } }
-function tick(){
+// yüksek DPI tabletlerde dev canvas'ları önle: piksel oranı sınırlanır (efektlerde fark edilmez)
+function sizeCanvas(c,ctx,max=2){ const r=Math.min(max,devicePixelRatio||1); c.width=Math.round(innerWidth*r); c.height=Math.round(innerHeight*r); ctx.setTransform(r,0,0,r,0,0); }
+// hareketler zamana bağlı: 60, 90 ya da 120 Hz ekranda aynı hızda akar (k = 60 Hz'lik kare sayısı)
+const frameK=(now,last)=>Math.min(3,Math.max(0,(now-last)/16.667))||1;
+let fxLast=0;
+function run(){ if(!running){ running=true; fxLast=performance.now(); requestAnimationFrame(tick); } }
+function tick(now){
+  const k=frameK(now,fxLast), drag=Math.pow(.985,k); fxLast=now;
   cx.clearRect(0,0,innerWidth,innerHeight);
   parts=parts.filter(p=>p.life>0&&p.y<innerHeight+40);
   for(const p of parts){
-    p.vy+=p.g; p.vx*=.985; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life-=p.decay;
+    p.vy+=p.g*k; p.vx*=drag; p.x+=p.vx*k; p.y+=p.vy*k; p.rot+=p.vr*k; p.life-=p.decay*k;
     cx.save(); cx.globalAlpha=Math.max(0,Math.min(1,p.life*1.5)); cx.fillStyle=p.c; cx.translate(p.x,p.y); cx.rotate(p.rot);
     if(p.sh===0) cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);
     else if(p.sh===1){ cx.beginPath(); cx.arc(0,0,p.s/3,0,7); cx.fill(); }
@@ -104,21 +109,25 @@ function setAmbient(m){
   for(let i=0;i<(t==='sun'?18:38);i++) ambParts.push(newAmb(true));
   if(!ambRaf) ambRaf=requestAnimationFrame(ambLoop);
 }
-function ambLoop(){
+// güneş parlaması her karede gradyan üretmek yerine bir kez çizilip kopyalanır
+const glow=(()=>{ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d'), r=g.createRadialGradient(64,64,0,64,64,64); r.addColorStop(0,'rgba(255,210,120,1)'); r.addColorStop(1,'rgba(255,210,120,0)'); g.fillStyle=r; g.fillRect(0,0,128,128); return c; })();
+let ambLast=0;
+function ambLoop(now){
   if(!ambType){ ambRaf=0; return; }
   ambRaf=requestAnimationFrame(ambLoop);
+  const k=ambLast?frameK(now,ambLast):1; ambLast=now;
   if(document.hidden) return;
   const w=innerWidth,h=innerHeight; ac.clearRect(0,0,w,h);
   ambParts.forEach((p,i)=>{
-    p.ph+=.02; p.x+=p.vx+Math.sin(p.ph)*.35; p.y+=p.vy; p.rot+=p.vr;
+    p.ph+=.02*k; p.x+=(p.vx+Math.sin(p.ph)*.35)*k; p.y+=p.vy*k; p.rot+=p.vr*k;
     if(p.y>h+30||p.y<-40||p.x<-40||p.x>w+40){ ambParts[i]=newAmb(false); return; }
+    if(ambType==='sun'){ ac.globalAlpha=p.a; ac.drawImage(glow,p.x-p.s,p.y-p.s,p.s*2,p.s*2); ac.globalAlpha=1; return; }
     ac.save(); ac.translate(p.x,p.y); ac.rotate(p.rot);
-    if(ambType==='sun'){ const g=ac.createRadialGradient(0,0,0,0,0,p.s); g.addColorStop(0,`rgba(${p.c},${p.a})`); g.addColorStop(1,`rgba(${p.c},0)`); ac.fillStyle=g; ac.beginPath(); ac.arc(0,0,p.s,0,7); ac.fill(); }
-    else { ac.fillStyle=`rgba(${p.c},${p.a})`; ac.beginPath(); if(ambType==='snow') ac.arc(0,0,p.s,0,7); else ac.ellipse(0,0,p.s,p.s*.5,0,0,7); ac.fill(); }
+    ac.fillStyle=`rgba(${p.c},${p.a})`; ac.beginPath(); if(ambType==='snow') ac.arc(0,0,p.s,0,7); else ac.ellipse(0,0,p.s,p.s*.5,0,0,7); ac.fill();
     ac.restore();
   });
 }
-function resizeAll(){ sizeCanvas(cv,cx); sizeCanvas(amb,ac); }
+function resizeAll(){ sizeCanvas(cv,cx); sizeCanvas(amb,ac,1.5); }
 resizeAll();
 
 /* ipucu balonu */
@@ -133,7 +142,7 @@ function showTip(el){
 }
 document.addEventListener('pointerover',e=>{ const el=e.target.closest('[data-tip]'); if(el!==tipEl) showTip(el); });
 document.addEventListener('focusin',e=>{ const el=e.target.closest('[data-tip]'); if(el!==tipEl) showTip(el); });
-document.addEventListener('scroll',()=>showTip(null),true);
+document.addEventListener('scroll',()=>{ if(tipEl) showTip(null); },{capture:true,passive:true});
 
 /* seviye atlama ekranı ve başarım bildirimi */
 let lvlT;

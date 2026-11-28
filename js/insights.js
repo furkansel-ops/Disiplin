@@ -9,12 +9,15 @@ function weekdayPerf(keys,h){
   return wd.map(v=>v.s?v.c/v.s:0);
 }
 function correlations(keys){
-  const hs=active(), out=[];
-  for(const a of hs) for(const b of hs){ if(a===b) continue;
-    let n1=0,b1=0,n0=0,b0=0;
-    for(const k of keys){ if(!schedK(a,k)||!schedK(b,k)) continue; const bo=isOn(k,b.id); if(isOn(k,a.id)){ n1++; if(bo) b1++; } else { n0++; if(bo) b0++; } }
-    if(n1>=8&&n0>=8){ const d=b1/n1-b0/n0; if(d>=.1) out.push({a,b,d,p1:b1/n1}); } }
-  return out.sort((x,y)=>y.d-x.d).slice(0,4);
+  return memo('corr'+keys.length+keys[0],()=>{
+    // her alışkanlık için gün gün durum bir kez çıkarılır: 2 = yapıldı, 1 = planlı ama yapılmadı, 0 = planlı değil
+    const hs=active(), out=[], st=hs.map(h=>Uint8Array.from(keys,k=>schedK(h,k)?(isOn(k,h.id)?2:1):0));
+    for(let i=0;i<hs.length;i++) for(let j=0;j<hs.length;j++){ if(i===j) continue;
+      const A=st[i], B=st[j]; let n1=0,b1=0,n0=0,b0=0;
+      for(let x=0;x<A.length;x++){ const a=A[x], b=B[x]; if(!a||!b) continue; if(a===2){ n1++; if(b===2) b1++; } else { n0++; if(b===2) b0++; } }
+      if(n1>=8&&n0>=8){ const d=b1/n1-b0/n0; if(d>=.1) out.push({a:hs[i],b:hs[j],d,p1:b1/n1}); } }
+    return out.sort((x,y)=>y.d-x.d).slice(0,4);
+  });
 }
 function moodInsight(keys){
   const md=keys.filter(k=>S.notes[k]?.mood); if(md.length<5) return null;
