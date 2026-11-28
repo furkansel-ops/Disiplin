@@ -173,7 +173,7 @@ document.addEventListener('contextmenu',e=>{ // sağ tık / uzun bas: sayısal h
 });
 document.addEventListener('keydown',e=>{
   const t=e.target, typing=t.matches?.('input,textarea,select,[contenteditable]'), dlg=document.querySelector('dialog[open]');
-  if(WZ) return; // kurulum sihirbazı açıkken kısayollar kapalı
+  if(WZ||LG) return; // kurulum sihirbazı ya da giriş ekranı açıkken kısayollar kapalı
   if(e.key==='Escape'&&(FQ||BR)){ if(BR) closeBreath(); else closeFocus(); return; }
   if(WR){ if(e.key==='Escape') closeWrapped(); else if(e.key==='ArrowRight') showSlide(WR.i+1); else if(e.key==='ArrowLeft') showSlide(WR.i-1); return; }
   if((e.key==='Enter'||e.key===' ')&&t.matches?.('[data-a]:not(button):not(input)')){ e.preventDefault(); t.click(); return; }

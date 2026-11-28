@@ -19,8 +19,9 @@ function fbLoad(){
   }).catch(e=>{ FB=null; throw e; }));
 }
 function onUser(u){
-  cUser=u; cReady=true;
-  if(u){ if(!CM||CM.uid!==u.uid){ CM={uid:u.uid,email:u.email||'',at:{},dirty:{},mod:{},last:0}; saveCM(); } cloudSync(); }
+  const was=cUser; cUser=u; cReady=true;
+  if(u){ closeLogin(); try{ localStorage.removeItem(SKEY); }catch(e){} if(!CM||CM.uid!==u.uid){ CM={uid:u.uid,email:u.email||'',at:{},dirty:{},mod:{},last:0}; saveCM(); } cloudSync(); }
+  else if(was||CM) openLogin(); // çıkış yapıldı ya da oturum düştü
   refreshAcc();
 }
 // core.js flush() gerçek bir değişiklik yazınca çağırır
@@ -84,44 +85,78 @@ function accountHTML(){
   else if(cUser&&CM) b=`<p class="note">✅ <b>${esc(cUser.email||'Hesap')}</b> ile giriş yapıldı. Değişikliklerin birkaç saniye içinde buluta yedeklenir.<br>Son eşitleme: <b>${cBusy?'eşitleniyor…':fmtTime(CM.last)}</b>${cErr?`<br>⚠️ ${esc(cErr)}`:''}</p>
     <div class="add-row"><button type="button" class="btn" data-a="accSync">🔄 Şimdi eşitle</button><button type="button" class="btn ghost" data-a="accOut">Çıkış yap</button></div>`;
   else if(CM&&!cReady) b='<p class="note">☁️ Hesaba bağlanılıyor…</p>';
-  else b=`${CM?'<p class="note">⚠️ Oturumun kapanmış, tekrar giriş yap.</p>':''}<div class="acc-form">
-    <button type="button" class="btn" data-a="accGoogle">Google ile giriş yap</button>
-    <input id="accMail" class="hi-name" type="email" autocomplete="email" placeholder="E-posta" aria-label="E-posta">
-    <input id="accPass" class="hi-name" type="password" autocomplete="current-password" placeholder="Şifre (en az 6 karakter)" aria-label="Şifre">
-    <div class="add-row"><button type="button" class="btn" data-a="accIn">Giriş yap</button><button type="button" class="btn ghost" data-a="accUp">Hesap aç</button><button type="button" class="btn ghost sm" data-a="accReset">Şifremi unuttum</button></div></div>
-    <p class="note">İsteğe bağlı. Giriş yaparsan alışkanlıkların, işaretlerin ve notların hesabına yedeklenir; yeni cihazda giriş yapınca hepsi geri gelir. Fotoğraflar ve sesli notlar bu cihazda kalır.</p>`;
+  else b=`<p class="note">${CM?'⚠️ Oturumun kapanmış, tekrar giriş yap.':'İsteğe bağlı. Giriş yaparsan alışkanlıkların, işaretlerin ve notların hesabına yedeklenir; yeni cihazda giriş yapınca hepsi geri gelir. Fotoğraflar ve sesli notlar bu cihazda kalır.'}</p>
+    <div class="add-row"><button type="button" class="btn" data-a="accLogin">Giriş yap / Hesap aç</button></div>`;
   return `<div id="accBox"><h4>☁️ Hesap ve bulut yedek</h4>${b}</div>`;
 }
 function refreshAcc(){ const el=$('#accBox'); if(el) el.outerHTML=accountHTML(); }
-const AUTH_ERR={'auth/invalid-credential':'E-posta veya şifre yanlış','auth/wrong-password':'E-posta veya şifre yanlış','auth/user-not-found':'Bu e-postayla hesap yok, “Hesap aç”a bas',
-  'auth/email-already-in-use':'Bu e-postayla zaten hesap var, “Giriş yap”a bas','auth/weak-password':'Şifre en az 6 karakter olmalı','auth/invalid-email':'E-posta adresi geçersiz',
-  'auth/missing-password':'Şifreyi yaz','auth/popup-closed-by-user':'Giriş penceresi kapatıldı','auth/cancelled-popup-request':'Giriş penceresi kapatıldı',
-  'auth/popup-blocked':'Tarayıcı giriş penceresini engelledi','auth/network-request-failed':'İnternet bağlantısı yok','auth/too-many-requests':'Çok fazla deneme oldu, biraz bekle',
-  'auth/unauthorized-domain':'Bu site Firebase’de yetkili alan adı değil','auth/operation-not-allowed':'Bu giriş yöntemi Firebase’de açık değil'};
+const AUTH_ERR={'auth/invalid-credential':'E-posta veya şifre yanlış','auth/wrong-password':'E-posta veya şifre yanlış','auth/user-not-found':'Bu e-postayla hesap yok, “Hesap aç”a geç',
+  'auth/email-already-in-use':'Bu e-postayla zaten hesap var, “Giriş yap”a geç','auth/weak-password':'Şifre en az 6 karakter olmalı','auth/invalid-email':'E-posta adresi geçersiz',
+  'auth/missing-password':'Şifreyi yaz','auth/popup-closed-by-user':'Google penceresi kapatıldı','auth/cancelled-popup-request':'Google penceresi kapatıldı',
+  'auth/popup-blocked':'Tarayıcı Google penceresini engelledi','auth/network-request-failed':'İnternet bağlantısı yok','auth/too-many-requests':'Çok fazla deneme oldu, biraz bekle',
+  'auth/unauthorized-domain':'Bu site Firebase’de yetkili alan adı değil','auth/operation-not-allowed':'Bu giriş yöntemi Firebase’de açık değil',
+  'auth/admin-restricted-operation':'Yeni hesap açma kapalı','auth/user-disabled':'Bu hesap devre dışı'};
 async function authDo(fn,okMsg){
-  if(authBusy) return; authBusy=true; toast('☁️ Bağlanıyor…');
+  if(authBusy) return; authBusy=true; let err='';
+  if(LG) lgSet(true,''); else toast('☁️ Bağlanıyor…');
   try{ const F=await fbLoad(); await fn(F); if(okMsg) toast(okMsg); }
-  catch(e){ toast('⚠️ '+(AUTH_ERR[e&&e.code]||(e&&e.code?'Bir sorun oldu: '+e.code:'Bağlantı kurulamadı, internetini kontrol et'))); }
-  finally{ authBusy=false; }
+  catch(e){ err=AUTH_ERR[e&&e.code]||(e&&e.code?'Bir sorun oldu: '+e.code:'Bağlantı kurulamadı, internetini kontrol et'); }
+  authBusy=false; if(LG) lgSet(false,err); else if(err) toast('⚠️ '+err);
 }
-function accVals(){ const m=$('#accMail'), p=$('#accPass');
-  if(!m.value.trim()){ shake(m); return null; } if(p.value.length<6){ shake(p); toast('Şifre en az 6 karakter olmalı'); return null; } return [m.value.trim(),p.value]; }
+
+/* ===== giriş ekranı ===== */
+const SKEY='aliskanlik-hesapsiz'; // "hesapsız devam et" seçildiyse açılışta bir daha sorma
+let LG=null;
+const G_ICON='<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+function openLogin(mode){ if(cUser) return; LG={mode:mode||'in'}; $('#login').classList.add('show'); document.body.classList.add('wz-open'); renderLogin(); }
+function closeLogin(){ if(!LG) return; LG=null; $('#login').classList.remove('show'); if(!WZ) document.body.classList.remove('wz-open'); }
+function renderLogin(){
+  const up=LG.mode==='up', mail=$('#lgMail')?.value||'';
+  $('#login').innerHTML=`<form class="lg-card" novalidate>
+    <div class="wz-logo">◆</div>
+    <h2>${up?'Hesap aç':'Tekrar hoş geldin'}</h2>
+    <p class="sub">${up?'Alışkanlıkların hesabında yedeklensin, her cihazda seninle olsun.':'Giriş yap, alışkanlıkların kaldığı yerden devam etsin.'}</p>
+    <button type="button" class="lg-google" data-a="lgGoogle">${G_ICON}<span>Google ile devam et</span></button>
+    <div class="lg-or">veya e-postayla</div>
+    <label class="wz-field">E-posta<input id="lgMail" type="email" autocomplete="email" inputmode="email" placeholder="ornek@mail.com" value="${esc(mail)}"></label>
+    <label class="wz-field">Şifre<span class="lg-pass"><input id="lgPass" type="password" autocomplete="${up?'new-password':'current-password'}" placeholder="${up?'En az 6 karakter':'Şifren'}"><button type="button" class="lg-eye" data-a="lgEye" aria-label="Şifreyi göster">👁</button></span></label>
+    <p class="lg-err" id="lgErr" role="alert" hidden></p>
+    <button type="submit" class="btn big-btn" id="lgGo">${up?'Hesabı oluştur':'Giriş yap'}</button>
+    <div class="lg-links">${up?'':'<button type="button" class="linkish" data-a="lgReset">Şifremi unuttum</button>'}<button type="button" class="linkish" data-a="lgMode">${up?'Zaten hesabın var mı? Giriş yap':'Hesabın yok mu? Hesap aç'}</button></div>
+    <button type="button" class="lg-skip" data-a="lgSkip">Hesapsız devam et →</button>
+    <p class="hint">Verilerin bu cihazda da saklanır · fotoğraflar ve sesli notlar cihazda kalır</p>
+  </form>`;
+}
+function lgSet(busy,err){
+  if(!LG) return; const f=$('#login form'); if(!f) return;
+  f.querySelectorAll('button').forEach(b=>b.disabled=busy);
+  $('#lgGo').textContent=busy?'Bağlanıyor…':LG.mode==='up'?'Hesabı oluştur':'Giriş yap';
+  const e=$('#lgErr'); e.textContent=err; e.hidden=!err;
+}
+$('#login').addEventListener('submit',e=>{
+  e.preventDefault(); const m=$('#lgMail'), p=$('#lgPass'), mail=m.value.trim(), up=LG.mode==='up';
+  if(!/^\S+@\S+\.\S+$/.test(mail)){ shake(m); lgSet(false,'E-posta adresini yaz'); return; }
+  if(p.value.length<6){ shake(p); lgSet(false,'Şifre en az 6 karakter olmalı'); return; }
+  authDo(({au,auth})=>(up?au.createUserWithEmailAndPassword:au.signInWithEmailAndPassword)(auth,mail,p.value),up?'🎉 Hesabın açıldı, verilerin yedekleniyor':'✅ Giriş yapıldı');
+});
 const CA={
-  accGoogle:()=>authDo(({au,auth})=>au.signInWithPopup(auth,new au.GoogleAuthProvider()),'✅ Giriş yapıldı'),
-  accIn:()=>{ const v=accVals(); if(v) authDo(({au,auth})=>au.signInWithEmailAndPassword(auth,...v),'✅ Giriş yapıldı'); },
-  accUp:()=>{ const v=accVals(); if(v) authDo(({au,auth})=>au.createUserWithEmailAndPassword(auth,...v),'🎉 Hesabın açıldı, verilerin yedekleniyor'); },
-  accReset:()=>{ const m=$('#accMail'); if(!m.value.trim()){ shake(m); toast('Önce e-postanı yaz'); return; }
-    authDo(({au,auth})=>au.sendPasswordResetEmail(auth,m.value.trim()),'📧 Şifre sıfırlama bağlantısı e-postana gönderildi'); },
+  lgGoogle:()=>authDo(({au,auth})=>au.signInWithPopup(auth,new au.GoogleAuthProvider()),'✅ Giriş yapıldı'),
+  lgMode:()=>{ LG.mode=LG.mode==='up'?'in':'up'; renderLogin(); $('#lgMail').focus(); },
+  lgEye:el=>{ const p=$('#lgPass'), show=p.type==='password'; p.type=show?'text':'password'; el.textContent=show?'🙈':'👁'; el.setAttribute('aria-label',show?'Şifreyi gizle':'Şifreyi göster'); p.focus(); },
+  lgReset:()=>{ const m=$('#lgMail'), mail=m.value.trim(); if(!mail){ shake(m); lgSet(false,'Sıfırlama bağlantısı için önce e-postanı yaz'); return; }
+    authDo(({au,auth})=>au.sendPasswordResetEmail(auth,mail),'📧 Şifre sıfırlama bağlantısı e-postana gönderildi'); },
+  lgSkip:()=>{ try{ localStorage.setItem(SKEY,'1'); }catch(e){} closeLogin(); },
+  accLogin:()=>{ $('#setDlg').close(); openLogin(); },
+  wzLogin:()=>openLogin(),
   accSync:()=>cloudSync(),
   accUseCloud:()=>cloudSync('cloud'), accUseLocal:()=>cloudSync('local'),
   accOut:()=>{ if(!confirm('Çıkış yapılsın mı? Verilerin bu cihazda kalır, sadece artık buluta yedeklenmez.')) return;
     authDo(async ({au,auth})=>{ await cloudSync(); await au.signOut(auth); CM=null; cConflict=false; saveCM(); refreshAcc(); },'Çıkış yapıldı'); },
-  wzLogin:()=>{ renderSettings(); $('#setDlg').showModal(); $('#accBox').scrollIntoView({block:'start'}); },
 };
-$('#setForm').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.id==='accPass') CA.accIn(); });
 
 // daha önce giriş yapıldıysa açılışın ardından bağlan; geri dönünce ve internet gelince eşitle
 if(CM) setTimeout(()=>fbLoad().catch(()=>{ cReady=true; refreshAcc(); }),1200);
+else if(!lsGet(SKEY)) openLogin(); // hesabı olmayan ilk açılış: önce giriş ekranı (hesapsız devam edilebilir)
 document.addEventListener('visibilitychange',()=>{ if(!cUser||!CM) return;
   if(document.hidden){ if(Object.keys(CM.dirty).length) cloudSync(); } else if(Date.now()-CM.last>30000) cloudSync(); });
 addEventListener('online',()=>{ if(cUser) cloudSync(); });
