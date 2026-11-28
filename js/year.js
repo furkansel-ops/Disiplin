@@ -1,8 +1,6 @@
 'use strict';
 /* ===== Yıllık özet: KPI, grafik, ısı haritası, hedefler, ay tablosu, Wrapped ===== */
 let chartMode='ticks', yCache=null;
-const yearSw=()=>`<div class="year-switch"><button class="icon-btn sm" data-a="yprev" aria-label="Önceki yıl">‹</button><span>${S.year}</span><button class="icon-btn sm" data-a="ynext" aria-label="Sonraki yıl">›</button></div>`;
-const statTabs=()=>`<div class="stat-tabs"><div class="seg" role="group" aria-label="İstatistik"><button data-a="go" data-go="12" class="${view===12?'on':''}">📊 Yıl özeti</button><button data-a="go" data-go="13" class="${view===13?'on':''}">📈 İçgörüler</button></div>${yearSw()}</div>`;
 function yearKeys(y){ const tk=todayKey(), out=[]; for(let m=0;m<12;m++) for(let d=1;d<=dim(y,m);d++){ const k=dkey(y,m,d); if(k>tk) return out; out.push(k); } return out; }
 function yearSummary(y){
   return memo('ys'+y,()=>{
@@ -31,7 +29,7 @@ function renderYear(){
   const rows=ms.map((s,i)=>`<tr data-a="go" data-go="${i}" tabindex="0" class="${i===cur?'cur':''}"><td>${MONTHS[i]}${i===best&&hasBest?' 👑':''}</td><td class="r"><b data-count="${s.ticks}">0</b></td>
     <td><div class="mini"><span class="track"><i data-w="${s.rate*100}%" style="--h:${HUES[i%HUES.length]}"></i></span><b data-count="${s.rate*100}" data-dec="1" data-pre="%">%0</b></div></td></tr>`).join('');
   $('#view').innerHTML=`<section>
-    <div class="mhead"><div class="rise">${statTabs()}<h2>${y} Yıl Özeti</h2></div><button class="btn rise" style="--i:1" data-a="wrapped">🎬 Yılın Hikâyesi</button></div>
+    <div class="mhead"><div class="rise"><span class="eyebrow">Yıllık Özet</span><h2>${y} Yıl Özeti</h2></div><button class="btn rise" style="--i:1" data-a="wrapped">🎬 Yılın Hikâyesi</button></div>
     <div class="kpis">
       <div class="kpi glass rise" style="--i:1"><span class="label">Yıllık Toplam Tik</span><b class="big" data-count="${total}">0</b><span class="sub">${active().length} alışkanlık · 12 ay</span></div>
       <div class="kpi glass rise" style="--i:2"><span class="label">En Verimli Ay</span><b class="big">${hasBest?MONTHS[best]:'—'}</b><span class="sub">${hasBest?`<b data-count="${ms[best].rate*100}" data-dec="1" data-pre="%">%0</b> başarı · ${ms[best].ticks} tik`:'Henüz veri yok'}</span></div>

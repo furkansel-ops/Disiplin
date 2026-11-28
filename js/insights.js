@@ -46,7 +46,7 @@ function renderInsights(){
   if(el&&y===now.getFullYear()) ins.push(`🔮 Bu tempoyla ${y} yılını yaklaşık <b>${fmt(fc)}</b> tikle kapatırsın.`);
   if(!ins.length) ins.push('Veri biriktikçe burada sana özel tespitler görünecek.');
   $('#view').innerHTML=`<section>
-    <div class="mhead"><div class="rise">${statTabs()}<h2>İçgörüler · ${y}</h2></div><button class="btn rise" style="--i:1" data-a="report">📋 Haftalık Rapor Kartı</button></div>
+    <div class="mhead"><div class="rise"><span class="eyebrow">Analiz</span><h2>İçgörüler</h2></div><button class="btn rise" style="--i:1" data-a="report">📋 Haftalık Rapor Kartı</button></div>
     <div class="igrid">
       <div class="card glass rise" style="--i:1"><div class="chead"><h3>🧠 Senin İçin Tespitler</h3></div><ul class="ilist">${ins.map((t,i)=>`<li style="--i:${i}">${t}</li>`).join('')}</ul></div>
       <div class="card glass rise" style="--i:2"><div class="chead"><h3>📅 Günlere Göre Başarı</h3><span class="sub">${y}, bugüne kadar</span></div>${barsHTML(order.map(w=>wd[w]),order.map(w=>DAYLONG[w]),v=>'%'+fmt(v*100),'c7',order.map(w=>DAYN[w]))}</div>

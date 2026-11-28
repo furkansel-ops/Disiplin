@@ -1,34 +1,29 @@
 'use strict';
 /* ===== Gezinme, olay yönetimi, geri alma, başlangıç ===== */
-// görünümler: 0–11 ay (Takvim), 12 yıl özeti, 13 içgörüler, 14 ödüller, 15 günlük, 16 bugün
-const now0=new Date(), TODAY=16;
-if(S.year!==now0.getFullYear()){ S.year=now0.getFullYear(); }
-let view=TODAY, navT, lastMonth=now0.getMonth(), lastStat=12;
+const now0=new Date();
+let view=S.year===now0.getFullYear()?now0.getMonth():0, navT;
+const TABS=[...MONTHS,'📊 Yıllık Özet','📈 İçgörüler','🏆 Ödüller','📔 Günlük'], LASTV=TABS.length-1;
 
-/* 5 bölümlük menü: tablette yan şerit, telefonda alt çubuk */
-const NAVI={sun:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2',
-  cal:'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4',chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
-  trophy:'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4',note:'M5 4h11l3 3v13H5zM9 10h6M9 14h6'};
-const NAV=[['bugun','Bugün','sun'],['takvim','Takvim','cal'],['stat','İstatistik','chart'],['odul','Ödüller','trophy'],['gunluk','Günlük','note']];
-const secOf=v=>v===TODAY?'bugun':v<12?'takvim':v<14?'stat':v===14?'odul':'gunluk';
-const secView=s=>s==='bugun'?TODAY:s==='takvim'?lastMonth:s==='stat'?lastStat:s==='odul'?14:15;
-function renderNav(){
-  const nav=$('#railNav');
-  if(!nav.children.length) nav.innerHTML=NAV.map(([s,l,ic])=>`<button class="nav-b" data-a="nav" data-s="${s}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${NAVI[ic]}"/></svg><span>${l}</span></button>`).join('');
-  $$('.nav-b',nav).forEach(b=>{ const on=b.dataset.s===secOf(view); b.classList.toggle('on',on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+function renderTabs(){
+  const tabs=$('#tabs'), n=new Date();
+  if(!tabs.children.length) tabs.innerHTML='<span class="ind" id="ind"></span>'+TABS.map((t,i)=>`<button class="tab" role="tab" data-a="go" data-go="${i}">${t}${i<12?'<span class="tp"><i></i></span>':''}</button>`).join('');
+  $$('.tab',tabs).forEach(t=>{
+    const i=+t.dataset.go; t.classList.toggle('on',i===view); t.setAttribute('aria-selected',i===view);
+    t.classList.toggle('now',i===n.getMonth()&&S.year===n.getFullYear());
+    const b=t.querySelector('.tp i'); if(b) b.style.setProperty('--p',monthStats(S.year,i).rate);
+  });
+  requestAnimationFrame(moveInd);
 }
-function updTop(){
-  const h=new Date().getHours(), n=new Date(), nm=profName();
-  $('#hello').textContent=`${h<5?'İyi geceler':h<12?'Günaydın':h<18?'İyi günler':h<22?'İyi akşamlar':'İyi geceler'}${nm&&nm!=='Ben'?', '+nm:''}`;
-  $('#profName').textContent=`${n.getDate()} ${MONTHS[n.getMonth()]}, ${DAYLONG[n.getDay()]}`;
-  const s=Math.max(0,...active().map(x=>streaks(x).cur)), c=$('#streakChip');
-  c.hidden=s<2; c.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z"/></svg>${s} gün`; c.dataset.tip=`En uzun aktif serin: ${s} gün`;
+function moveInd(){
+  const t=$('.tab.on'), ind=$('#ind'); if(!t||!ind) return;
+  ind.style.width=t.offsetWidth+'px'; ind.style.transform=`translateX(${t.offsetLeft}px)`;
+  const tabs=$('#tabs'); tabs.scrollTo({left:t.offsetLeft-tabs.clientWidth/2+t.offsetWidth/2,behavior:RM.matches?'auto':'smooth'});
 }
-const updHello=updTop;
-addEventListener('resize',()=>resizeAll());
+addEventListener('resize',()=>{ resizeAll(); moveInd(); });
+document.fonts?.ready.then(()=>moveInd()); // font yüklenince sekme genişlikleri değişir
 function render(){
-  updTop(); renderNav(); setAmbient(view<12?view:new Date().getMonth());
-  if(view===TODAY) renderToday(); else if(view<12) renderMonth(); else if(view===12) renderYear(); else if(view===13) renderInsights(); else if(view===14) renderRewards(); else renderJournal();
+  $('#yLabel').textContent=S.year; renderTabs(); setAmbient(view<12?view:new Date().getMonth());
+  if(view<12) renderMonth(); else if(view===12) renderYear(); else if(view===13) renderInsights(); else if(view===14) renderRewards(); else renderJournal();
 }
 function swap(dir){
   const el=$('#view'); clearTimeout(navT); showTip(null);
@@ -36,31 +31,19 @@ function swap(dir){
   el.style.setProperty('--dir',dir); el.classList.add('leave');
   navT=setTimeout(()=>{ render(); el.classList.remove('leave'); el.classList.add('enter'); void el.offsetWidth; el.classList.remove('enter'); },190);
 }
-function go(v){
-  if(v===view||v<0||v>TODAY) return;
-  const order=NAV.findIndex(n=>n[0]===secOf(v))-NAV.findIndex(n=>n[0]===secOf(view)), dir=order?Math.sign(order):(v>view?1:-1);
-  view=v; if(v<12) lastMonth=v; if(v===12||v===13) lastStat=v;
-  renderNav(); swap(dir); window.scrollTo({top:0,behavior:RM.matches?'auto':'smooth'});
-}
-function setYear(y){ const dir=y>S.year?1:-1; S.year=y; rev++; save(); renderNav(); swap(dir); }
-// Takvim'de ay değiştir (yıl sınırını geçer)
-function stepMonth(d){
-  let m=(view<12?view:lastMonth)+d, y=S.year;
-  if(m<0){ m=11; y--; } else if(m>11){ m=0; y++; }
-  if(y!==S.year){ S.year=y; rev++; save(); }
-  view=m; lastMonth=m; renderNav(); swap(d);
-}
-const stepSection=d=>{ const i=NAV.findIndex(n=>n[0]===secOf(view)), j=Math.max(0,Math.min(NAV.length-1,i+d)); if(j!==i) go(secView(NAV[j][0])); };
+function go(v){ if(v===view||v<0||v>LASTV) return; const dir=v>view?1:-1; view=v; renderTabs(); swap(dir); window.scrollTo({top:0,behavior:RM.matches?'auto':'smooth'}); }
+function setYear(y){ const dir=y>S.year?1:-1; S.year=y; rev++; save(); $('#yLabel').textContent=y; renderTabs(); swap(dir); }
 
 /* veri değiştiğinde ekranı güncelle */
 function onData(keys){
-  rev++; save(); updXP(true); updTop();
+  rev++; save(); updXP(true);
   if(view<12){
-    if(mmode()==='table'&&$('.grid')){ keys.forEach(k=>{ $$(`.cell[data-k="${k}"]`).forEach(updCell); updNote(k); const dn=$(`.dnum[data-k="${k}"]`); if(dn){ dn.classList.toggle('joker',restK(k)); dn.classList.toggle('frz',!!S.freezes[k]); } }); }
+    const mode=S.settings.view;
+    if(mode==='table'&&$('.grid')){ keys.forEach(k=>{ $$(`.cell[data-k="${k}"]`).forEach(updCell); updNote(k); const dn=$(`.dnum[data-k="${k}"]`); if(dn){ dn.classList.toggle('joker',!!S.jokers[k]); dn.classList.toggle('frz',!!S.freezes[k]); } }); }
+    else if(mode==='today'&&$('.tcard')) updToday();
     else renderMonthBody(false);
     refreshMonth(); updBoss(true);
-  } else if(view===TODAY) updTodayPage();
-  else render();
+  } else render();
   checkQuests(); if(FQ) renderFocus(); updTour();
   if($('#dayDlg').open) renderDay();
   clearTimeout(onData.t); onData.t=setTimeout(()=>{ autoGoals(); checkAch(false); checkLevel(false); },450);
@@ -112,22 +95,18 @@ const A={
   detail:el=>openDetail(el.dataset.id),
   vmode:el=>{ S.settings.view=el.dataset.v; save(); $$('.toolbar .seg button').forEach(b=>b.classList.toggle('on',b===el)); renderMonth(); },
   cat:el=>{ S.settings.cat=el.dataset.c; save(); $$('.toolbar .chip').forEach(b=>b.classList.toggle('on',b===el)); renderMonthBody(true); later(refreshMonth); },
-  goToday:()=>A.nav({dataset:{s:'bugun'}}),
-  nav:el=>{ const s=el.dataset.s, n=new Date(); if(s==='bugun'&&S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); if(view===TODAY){ render(); return; } } go(secView(s)); },
-  mprev:()=>stepMonth(-1), mnext:()=>stepMonth(1),
-  ttab:el=>{ const i=TTABS.findIndex(t=>t[0]===el.dataset.t), j=TTABS.findIndex(t=>t[0]===curTab()); if(i!==j) setTab(el.dataset.t,i>j?1:-1); },
-  mnow:()=>{ const n=new Date(); if(S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); } lastMonth=n.getMonth(); if(view===lastMonth) render(); else go(lastMonth); },
+  goToday:()=>{ const n=new Date(); if(S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); } view=-1; go(n.getMonth()); },
   dismissAlert:el=>{ alertDismissed=true; const a=el.closest('.alerts'); a.animate([{opacity:1},{opacity:0,transform:'translateY(-6px)'}],{duration:dur(250)}).finished.then(()=>a.remove()); },
   cell:el=>{ const h=hab(el.dataset.h); if(h&&h.target) openVal(el.dataset.k,h,el); else changeHabit(el.dataset.k,h,'toggle',el); },
   bulk:el=>bulkDay(el.dataset.k,el),
   day:el=>openDay(el.dataset.k),
   tcard:el=>{ const h=hab(el.dataset.h); if(h.target) openVal(todayKey(),h,el); else changeHabit(todayKey(),h,'toggle',el); },
-  tval:el=>openVal(todayKey(),hab(el.dataset.h),el.closest('.trw')),
+  tval:el=>openVal(todayKey(),hab(el.dataset.h),el.closest('.tcard')),
   vadd:el=>{ $('#valIn').value=String(Math.round(Math.max(0,valNow()+(+el.dataset.v))*100)/100); updVal(); sfx('tick'); },
   vfill:()=>{ if(VK) saveVal(Math.max(valNow(),tgtK(VK.h,VK.k))); }, vzero:()=>saveVal(0), vsave:()=>saveVal(valNow()),
   qtone:el=>{ S.settings.qtone=el.dataset.t; delete S.quotes[qKey()]; save(); swapQuote(); sfx('tick'); },
-  tinc:el=>changeHabit(todayKey(),hab(el.dataset.h),'inc',el.closest('.trw')),
-  tdec:el=>changeHabit(todayKey(),hab(el.dataset.h),'dec',el.closest('.trw')),
+  tinc:el=>changeHabit(todayKey(),hab(el.dataset.h),'inc',el.closest('.tcard')),
+  tdec:el=>changeHabit(todayKey(),hab(el.dataset.h),'dec',el.closest('.tcard')),
   mood:el=>{ const n=noteOf(dayK), v=+el.dataset.v; n.mood=n.mood===v?0:v; cleanNote(dayK); onData([dayK]); if(n.mood) sfx('tick'); },
   dtog:el=>{ const h=hab(el.dataset.h); if(h&&h.target) openVal(dayK,h,el); else changeHabit(dayK,h,'toggle',el); },
   photoDel:()=>{ delete S.photos[dayK]; onData([dayK]); renderCollage(); },
@@ -186,10 +165,11 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&t.matches?.('[data-a]:not(button):not(input)')){ e.preventDefault(); t.click(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing){ e.preventDefault(); undo(); return; }
   if(typing||dlg||e.ctrlKey||e.metaKey||e.altKey) return;
-  if((e.key==='ArrowRight'||e.key==='ArrowLeft')&&t===document.body){ const d=e.key==='ArrowRight'?1:-1; if(view<12) stepMonth(d); else if(!(view===TODAY&&stepTab(d))) stepSection(d); }
+  if(e.key==='ArrowRight'&&t===document.body) go(Math.min(LASTV,view+1));
+  if(e.key==='ArrowLeft'&&t===document.body) go(Math.max(0,view-1));
   if(/^[1-9]$/.test(e.key)){ // hızlı giriş: 1–9 bugünün alışkanlıkları
     const h=active()[+e.key-1]; if(!h) return; const k=todayKey();
-    const origin=$(`.cell[data-k="${k}"][data-h="${CSS.escape(h.id)}"]`)||$(`.tchk[data-h="${CSS.escape(h.id)}"]`);
+    const origin=$(`.cell[data-k="${k}"][data-h="${CSS.escape(h.id)}"]`)||$(`.tcard[data-h="${CSS.escape(h.id)}"]`);
     if(h.target){ openVal(k,h,origin); return; }
     if(changeHabit(k,h,'toggle',origin)&&!origin) toast(`${iconText(h.icon)} ${h.name}: ${isOn(k,h.id)?'✅ tamamlandı':h.target?`${fmt(valOf(k,h.id))}/${h.target}`:'işaret kaldırıldı'}`);
   }
@@ -226,10 +206,10 @@ $('#view').addEventListener('change',e=>{ // ay karşılaştırma seçimleri
 });
 // mobil: yatay kaydırma ile sayfa değiştir
 let sx=null;
-$('#view').addEventListener('touchstart',e=>{ sx=e.target.closest('.grid-scroll,.heat-wrap,.garden,.tscroll,.chart,.ba,.hheat,.pixels,.wgrid-wrap,input,textarea,select')?null:[e.touches[0].clientX,e.touches[0].clientY]; },{passive:true});
+$('#view').addEventListener('touchstart',e=>{ sx=e.target.closest('.grid-scroll,.heat-wrap,.garden,.tscroll,.chart,.ba,.hheat,.pixels,input,textarea,select')?null:[e.touches[0].clientX,e.touches[0].clientY]; },{passive:true});
 $('#view').addEventListener('touchend',e=>{
   if(!sx) return; const dx=e.changedTouches[0].clientX-sx[0], dy=e.changedTouches[0].clientY-sx[1]; sx=null;
-  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6) { const d=dx<0?1:-1; if(view<12) stepMonth(d); else if(!(view===TODAY&&stepTab(d))) stepSection(d); }
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6) go(Math.max(0,Math.min(LASTV,view+(dx<0?1:-1))));
 },{passive:true});
 
 /* self-test (index.html#test) */
@@ -280,7 +260,7 @@ async function selfTestAsync(st){ // aktarım paketinin gidiş-dönüşü (globa
 }
 
 /* başlangıç */
-applyTheme();
+applyTheme(); $('#profName').textContent='👤 '+profName();
 render(); checkAch(true); checkLevel(true); updXP(false); checkQuests(); save();
 maybeOnboard(); autoReport(); startReminders(); registerSW(); handleHash(); checkLetters();
 setTimeout(autoBackup,4000); setInterval(autoBackup,6*36e5);
