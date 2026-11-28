@@ -32,7 +32,10 @@ const RANKS=[{min:0,name:'Başlangıç',icon:'🌱'},{min:100,name:'İstikrarlı
 const CATS=[['saglik','💚 Sağlık'],['zihin','🧠 Zihin'],['sosyal','🫂 Sosyal'],['kariyer','💼 Kariyer'],['kisisel','✨ Kişisel']];
 const DIFFS=['','Kolay','Orta','Zor'];
 const MOODS=['😞','😕','😐','🙂','😄'], MOODN=['Kötü','Durgun','Normal','İyi','Harika'];
-const PETS=[['cat','🐱','Kedi'],['dog','🐶','Köpek'],['fox','🦊','Tilki'],['dragon','🐲','Ejder'],['panda','🐼','Panda'],['bunny','🐰','Tavşan']];
+// [tür, emoji, ad, açılış seviyesi]: ilk altısı baştan açık (kurulum sihirbazında da bunlar çıkar)
+const PETS=[['cat','🐱','Kedi',1],['dog','🐶','Köpek',1],['fox','🦊','Tilki',1],['dragon','🐲','Ejder',1],['panda','🐼','Panda',1],['bunny','🐰','Tavşan',1],
+  ['owl','🦉','Baykuş',4],['penguin','🐧','Penguen',6],['turtle','🐢','Kaplumbağa',8],['hamster','🐹','Hamster',10],['lion','🦁','Aslan',12],['koala','🐨','Koala',14],
+  ['unicorn','🦄','Tekboynuz',18],['octopus','🐙','Ahtapot',22],['eagle','🦅','Kartal',26],['elder','🐉','Kadim Ejder',30]];
 const SLOTS=[['sabah','🌅 Sabah'],['ogle','☀️ Öğle'],['aksam','🌙 Akşam']];
 const REASONS=[['yorgun','😴 Yorgundum'],['zaman','⏳ Zaman yoktu'],['unuttum','🤷 Unuttum'],['hasta','🤒 Hastaydım'],['motiv','🫠 Motivasyon yok'],['diger','💬 Diğer']];
 const EMOJIS=['💧','📕','🏃','💪','🧘','🥗','😴','🧠','✍️','🎯','🚭','🌅','🎸','💊','🧹','📵','🙏','💰','⏰','🥪','👋','🗣️','🎨','🌿','🍬','📞','🏦','🛏️','🕊️','🌳','🎧','💡','📧','🔕','🍽️','👕','🌙','☕','📖','🤸','🚶','🚴','🏊','🍎','🦷','🧴','📝','🧩','🎹','📷','💻','🌍','❤️','🐶'];
@@ -117,7 +120,7 @@ function blankState(){
   return {v:2,theme:'dark',accent:'',year:new Date().getFullYear(),
     habits:mkHabits(DEFAULT_HABITS),
     checks:{},vals:{},times:{},notes:{},photos:{},jokers:{},freezes:{},quotes:{},goals:[],quits:[],ach:{},bosses:{},
-    subd:{},reasons:{},vacations:[],challenges:[],letters:[],vision:[],voice:{},pet:{name:'Pofuduk',type:'cat'},avatar:{base:'🙂',hat:'',eyes:'',aura:''},
+    subd:{},reasons:{},vacations:[],challenges:[],letters:[],vision:[],voice:{},pet:{name:'Pofuduk',type:'cat',acc:'',pats:0,fed:'',played:''},avatar:{base:'🙂',hat:'',eyes:'',item:'',aura:'',frame:''},
     settings:defaultSettings(),levelSeen:null,lastReport:'',lastBackup:'',onboarded:true,tour:{done:true,rw:false}};
 }
 // Yeni kullanıcı: alışkanlık yok, kurulum sihirbazı ve "ilk adımlar" rehberi açılır
@@ -172,8 +175,8 @@ function validate(o){
   const letters=arr(o.letters,l=>isObj(l)&&DK.test(l.open)&&DK.test(l.created)?{id:str(l.id||uid(),40),text:str(l.text,2000),open:l.open,created:l.created,seen:!!l.seen}:null).slice(0,50);
   const vision=arr(o.vision,v=>isObj(v)&&typeof v.img==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v.img)&&v.img.length<300000?{id:str(v.id||uid(),40),img:v.img,text:str(v.text,80)}:null).slice(0,12);
   const pt=isObj(o.pet)?o.pet:{}, av=isObj(o.avatar)?o.avatar:{};
-  const pet={name:str(pt.name||'Pofuduk',20),type:PETS.some(p=>p[0]===pt.type)?pt.type:'cat'};
-  const avatar={base:str(av.base||'🙂',12),hat:str(av.hat,12),eyes:str(av.eyes,12),aura:str(av.aura,12)};
+  const pet={name:str(pt.name||'Pofuduk',20),type:PETS.some(p=>p[0]===pt.type)?pt.type:'cat',acc:str(pt.acc,12),pats:clampInt(pt.pats,0,1e6,0),fed:DK.test(pt.fed||'')?pt.fed:'',played:DK.test(pt.played||'')?pt.played:''};
+  const avatar={base:str(av.base||'🙂',12),hat:str(av.hat,12),eyes:str(av.eyes,12),item:str(av.item,12),aura:str(av.aura,12),frame:str(av.frame,12)};
   const photos=dmap(o.photos,v=>typeof v==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)&&v.length<600000?v:undefined);
   const flag=v=>v?1:undefined, jokers=dmap(o.jokers,flag), freezes=dmap(o.freezes,flag), voice=dmap(o.voice,flag);
   const quotes={}; if(isObj(o.quotes)) for(const [k,v] of Object.entries(o.quotes)) if(typeof v==='string'&&/^\d{4}-\d{1,2}$/.test(k)) quotes[k]=v.slice(0,300);

@@ -25,7 +25,7 @@ function renderWelcome(){
     <div class="add-row"><input id="wzNew" class="hi-name" maxlength="60" placeholder="Kendi alışkanlığını yaz…" aria-label="Kendi alışkanlığın"><button class="btn" data-a="wzAdd">Ekle</button></div>
     <div class="wz-btns"><button class="btn ghost" data-a="wzBack">← Geri</button><button class="btn big-btn" data-a="wzNext" id="wzGo">${wzNextLabel()}</button></div>`;
   else body=`<h2>Son dokunuş ✨</h2><p class="sub">Alışkanlıklarını yaptıkça büyüyecek bir dost seç. Şimdilik bir yumurta 🥚</p>
-    <div class="wz-pets">${PETS.map(([t,e,n])=>`<button class="wz-pet${WZ.pet===t?' on':''}" data-a="wzPet" data-t="${t}" aria-pressed="${WZ.pet===t}"><span>${e}</span>${n}</button>`).join('')}</div>
+    <div class="wz-pets">${PETS.filter(p=>p[3]<=1).map(([t,e,n])=>`<button class="wz-pet${WZ.pet===t?' on':''}" data-a="wzPet" data-t="${t}" aria-pressed="${WZ.pet===t}"><span>${e}</span>${n}</button>`).join('')}</div>
     <label class="wz-field">Dostunun adı<input id="wzPetName" maxlength="20" value="${esc(WZ.petName)}"></label>
     <label class="wz-field">⏰ Günlük hatırlatma saati <small>(isteğe bağlı, uygulama açıkken)</small><input type="time" id="wzRem" value="${WZ.rem}"></label>
     <div class="wz-btns"><button class="btn ghost" data-a="wzBack">← Geri</button><button class="btn big-btn" data-a="wzFinish">Hadi başlayalım! 🚀</button></div>`;
@@ -39,7 +39,7 @@ function wzSave(){ // adımlar arasında yazılanları koru
 function finishWelcome(){
   wzSave();
   S.habits=[...WZ.sel.entries()].map(([name,{icon,o}],i)=>normHabit({...o,id:uid(),name,icon,hue:HUES[i%HUES.length],created:todayKey()},i));
-  S.pet={name:(WZ.petName||'Pofuduk').slice(0,20),type:WZ.pet};
+  S.pet={...S.pet,name:(WZ.petName||'Pofuduk').slice(0,20),type:WZ.pet};
   if(/^\d\d:\d\d$/.test(WZ.rem)){ S.settings.reminder=WZ.rem; if('Notification' in window&&Notification.permission==='default') Notification.requestPermission().catch(()=>{}); }
   if(WZ.name){ const p=P.list.find(x=>x.id===P.active); if(p){ p.name=WZ.name.slice(0,24); savePK(); $('#profName').textContent='👤 '+profName(); } }
   const nm=WZ.name; S.onboarded=true; S.year=new Date().getFullYear(); rev++; flush(); closeWelcome();

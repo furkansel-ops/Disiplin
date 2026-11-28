@@ -161,7 +161,7 @@ const unlockQ=[]; let unlockBusy=false;
 function showUnlock(a){ unlockQ.push(a); if(!unlockBusy) nextUnlock(); }
 function nextUnlock(){
   const a=unlockQ.shift(); if(!a){ unlockBusy=false; return; }
-  unlockBusy=true; $('#ulE').textContent=a[1]; $('#ulT').textContent=a[2]; $('#ulD').textContent=a[3];
+  unlockBusy=true; $('#ulX').textContent=`${TIER[a[4]][0]} başarım açıldı · +${TIER[a[4]][1]} XP`; $('#ulE').textContent=a[1]; $('#ulT').textContent=a[2]; $('#ulD').textContent=a[3];
   const u=$('#unlock'); u.classList.add('show'); sfx('ding'); burst(innerWidth/2,70,30);
   setTimeout(()=>{ u.classList.remove('show'); setTimeout(nextUnlock,500); },2800);
 }

@@ -10,15 +10,24 @@ const IDB=(()=>{ let p=null;
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{ const t=db.transaction('m',mode), r=fn(t.objectStore('m')); t.oncomplete=()=>res(r&&r.result); t.onerror=()=>rej(t.error); }));
   return {get:k=>tx('readonly',s=>s.get(k)),set:(k,v)=>tx('readwrite',s=>s.put(v,k)),del:k=>tx('readwrite',s=>s.delete(k))}; })();
 
+/* ---------- kilit kuralı: sayı = seviye, metin = başarım kimliği ---------- */
+const reqOk=(req,L)=>typeof req==='number'?L>=req:!!S.ach[req];
+const reqLabel=req=>typeof req==='number'?`Lv ${req}`:'🏅';
+const reqTip=req=>typeof req==='number'?`Seviye ${req}'te açılır`:`“${(ACH.find(a=>a[0]===req)||[])[2]||req}” başarımıyla açılır`;
+
 /* ---------- evcil hayvan ---------- */
 const PET_STAGES=[[1,'Yumurta'],[3,'Yavru'],[6,'Genç'],[11,'Yetişkin'],[21,'Efsane']];
+const PET_ACC=[['🎀','Fiyonk',1],['🧣','Atkı',3],['🎩','Silindir',5],['🕶️','Gözlük',7],['🎂','Doğum günü',9],['🧢','Şapka',11],['🎃','Balkabağı',13],['🪽','Kanat',16],['👑','Taç',20],['💎','Elmas tasma',25]];
 function petState(){
   const L=xpInfo().L, st=PET_STAGES.reduce((a,s,i)=>L>=s[0]?i:a,0), tk=todayKey(), td=dayStat(tk);
   let s=0,c=0; for(let i=1;i<=3;i++){ const ds=dayStat(addDays(tk,-i)); s+=ds.s; c+=ds.c; }
   const recent=s?c/s:.6, happy=Math.round(Math.min(1,recent*.65+td.p*.45)*100);
-  return {L,st,stage:PET_STAGES[st][1],next:PET_STAGES[st+1],happy,mood:happy>=70?'happy':happy>=40?'ok':'sad',food:td.p,left:td.s-td.c};
+  const energy=Math.round(Math.min(1,recent*.5+(S.pet.played===tk?.25:0)+(S.pet.fed===tk?.25:0))*100);
+  return {L,st,stage:PET_STAGES[st][1],next:PET_STAGES[st+1],happy,energy,bond:Math.min(100,S.pet.pats%100||(S.pet.pats?100:0)),bondLv:Math.floor(S.pet.pats/100),
+    mood:happy>=70?'happy':happy>=40?'ok':'sad',food:td.p,left:td.s-td.c};
 }
 const petEmoji=st=>st===0?'🥚':(PETS.find(p=>p[0]===S.pet.type)||PETS[0])[1];
+const petAccHTML=()=>S.pet.acc&&petState().st>0?`<span class="pet-acc">${esc(S.pet.acc)}</span>`:'';
 function petMsg(p){
   if(p.st===0) return `Yumurtam çatlamak üzere… Seviye ${PET_STAGES[1][0]}'te çıkacağım! 🥚`;
   if(p.food>=1) return 'Bugün harikaydın! Karnım tok, çok mutluyum 💕';
@@ -28,49 +37,86 @@ function petMsg(p){
 }
 function petMini(){ const p=petState(); return `<button class="pet-mini ${p.mood}" data-a="petPat" aria-label="${esc(S.pet.name)} ile oyna"><span class="pet-e st${p.st}">${petEmoji(p.st)}</span><span class="pet-b">${esc(petMsg(p))}</span></button>`; }
 function petCard(){
-  const p=petState();
-  return `<div class="card glass rise pet-card ${p.mood}" style="--i:2"><div class="chead"><h3>🐾 Evcil Dostun</h3><span class="sub">${p.stage}${p.next?` · Seviye ${p.next[0]}'de ${p.next[1]}`:' · son aşama'}</span></div>
-    <div class="pet-row"><button class="pet-big" data-a="petPat" aria-label="Sev"><span class="pet-e st${p.st}">${petEmoji(p.st)}</span>${p.mood==='sad'?'<span class="pet-fx">💧</span>':p.mood==='happy'?'<span class="pet-fx">💕</span>':''}</button>
+  const p=petState(), L=p.L, bar=(l,v,h)=>`<div class="pbar"><span>${l}</span><span class="track"><i style="--h:${h};width:${v}%"></i></span><b>%${v}</b></div>`;
+  return `<div class="card glass rise pet-card ${p.mood}" id="petBox" style="--i:2"><div class="chead"><h3>🐾 Evcil Dostun</h3><span class="sub">${p.stage}${p.next?` · Seviye ${p.next[0]}'de ${p.next[1]}`:' · son aşama'}</span></div>
+    <div class="pet-row"><button class="pet-big" data-a="petPat" aria-label="Sev"><span class="pet-e st${p.st}">${petEmoji(p.st)}</span>${petAccHTML()}${p.mood==='sad'?'<span class="pet-fx">💧</span>':p.mood==='happy'?'<span class="pet-fx">💕</span>':''}</button>
       <div style="flex:1;min-width:200px"><input class="pet-name" data-pet="name" value="${esc(S.pet.name)}" maxlength="20" aria-label="Evcil hayvan adı">
         <p class="pet-say">“${esc(petMsg(p))}”</p>
-        <div class="pbar"><span>💖 Mutluluk</span><span class="track"><i style="--h:330;width:${p.happy}%"></i></span><b>%${p.happy}</b></div>
-        <div class="pbar"><span>🍖 Tokluk</span><span class="track"><i style="--h:38;width:${Math.round(p.food*100)}%"></i></span><b>%${Math.round(p.food*100)}</b></div>
-        <div class="chips" style="margin-top:10px">${PETS.map(([t,e,n])=>`<button class="chip${S.pet.type===t?' on':''}" data-a="petType" data-t="${t}">${e} ${n}</button>`).join('')}</div></div></div>
-    <p class="hint">Alışkanlıklarını yaptıkça doyar ve mutlu olur; seviye atladıkça büyür.</p></div>`;
+        ${bar('💖 Mutluluk',p.happy,330)}${bar('🍖 Tokluk',Math.round(p.food*100),38)}${bar(`🤝 Bağ${p.bondLv?` ×${p.bondLv+1}`:''}`,p.bond,200)}${bar('⚡ Enerji',p.energy,145)}</div></div>
+    <div class="pet-acts"><button class="btn ghost" data-a="petPat">🤲 Sev</button><button class="btn ghost" data-a="petFeed">🍖 Ödül maması</button><button class="btn ghost" data-a="petPlay">🎾 Oyna</button></div>
+    <span class="label">Tür · ${PETS.length}</span>
+    <div class="chips">${PETS.map(([t,e,n,lv])=>{ const lock=L<lv; return `<button class="chip${S.pet.type===t?' on':''}${lock?' lock':''}" data-a="petType" data-t="${t}"${lock?` disabled data-tip="Seviye ${lv}'te açılır"`:''}>${lock?'🔒':e} ${n}${lock?` <small>Lv ${lv}</small>`:''}</button>`; }).join('')}</div>
+    <span class="label">Aksesuar · ${PET_ACC.length}</span>
+    <div class="chips">${PET_ACC.map(([e,n,lv])=>{ const lock=L<lv; return `<button class="chip${S.pet.acc===e?' on':''}${lock?' lock':''}" data-a="petAcc" data-v="${e}"${lock?` disabled data-tip="Seviye ${lv}'te açılır"`:''}>${lock?'🔒':e} ${n}${lock?` <small>Lv ${lv}</small>`:''}</button>`; }).join('')}</div>
+    <p class="hint">Alışkanlıklarını yaptıkça doyar ve mutlu olur; seviye atladıkça büyür. Sevdikçe, oynadıkça bağınız güçlenir.</p></div>`;
 }
+const refreshPet=()=>{ const b=$('#petBox'); if(b){ const t=document.createElement('div'); t.innerHTML=petCard(); t.firstElementChild.classList.remove('rise'); b.replaceWith(t.firstElementChild); } };
+// bağ artınca başarım eşiklerinde kontrol (her sevmede tüm hesapları yenilemeye gerek yok)
+function petBond(n){ const b=S.pet.pats; S.pet.pats+=n; save(); if([1,50,200].some(t=>b<t&&S.pet.pats>=t)){ rev++; checkAch(); } }
 
-/* ---------- avatar ---------- */
-const AV_BASE=['🙂','😎','🧑','👩','🧔','👧','🧑‍🎓','🦸','🧙','🥷','🤖','🐵'];
-const AV_HATS=[['🎩',2],['🧢',4],['👒',6],['🎓',9],['⛑️',12],['👑',15]];
-const AV_EYES=[['👓',3],['🕶️',5],['🥽',8]];
-const AV_AURA=[['fire',8,'🔥 Alev'],['ice',12,'❄️ Buz'],['gold',20,'✨ Altın'],['rainbow',25,'🌈 Gökkuşağı']];
+/* ---------- avatar: [değer, kilit] · aura ve çerçevede üçüncü öğe etiket ---------- */
+const AV={
+  base:['Karakter',[...['🙂','😎','🧑','👩','🧔','👧','🧑‍🎓','🦸','🧙','🥷','🤖','🐵','👨','👱','👩‍🦰','🧑‍🦱','👴','👵'].map(v=>[v,1]),
+    ['🧑‍🚀',4],['🧑‍🍳',5],['🧑‍🎤',6],['🧑‍🔬',7],['🧑‍💻',8],['🧑‍🎨',9],['🧑‍🚒',10],['🕵️',11],['🧛',12],['🧜',13],['🧚',14],['🧞',15],['🦹',16],['🧝',17],['👸',18],['🤴',19],['👽','perfect30'],['🐸','s30']]],
+  hat:['Şapka',[['🎩',2],['🎀',3],['🧢',4],['👒',6],['🪖',7],['🤠',8],['🎓',9],['🌸',10],['🍀',11],['⛑️',12],['⭐',13],['🎉',14],['👑',15],['🪄',16],['🔥','s100'],['🌈','m100']]],
+  eyes:['Gözlük',[['👓',3],['🕶️',5],['🥽',8],['🎭',10],['🩹',11],['💫',12],['✨',14],['⭐',17],['💥',20],['🌟','perfect100']]],
+  item:['Elinde',[['📚',1],['⚔️',4],['🎸',6],['🏀',7],['🧪',9],['🎨',10],['🛡️',12],['🔮',14],['🪃',16],['🎯',18],['🌹',20],['💎',25],['🪐',30],['🏆','chal10']]],
+  aura:['Aura',[['leaf',6,'🍃 Yaprak'],['fire',8,'🔥 Alev'],['ocean',10,'🌊 Okyanus'],['ice',12,'❄️ Buz'],['bolt',15,'⚡ Şimşek'],['love',18,'💜 Mor'],['gold',20,'✨ Altın'],['rainbow',25,'🌈 Gökkuşağı'],['sun','chal','☀️ Güneş'],['moon','late','🌙 Ay']]],
+  frame:['Çerçeve',[['silver',5,'⚪ Gümüş'],['green',10,'🟢 Zümrüt'],['blue',15,'🔵 Safir'],['purple',20,'🟣 Ametist'],['gold',25,'🟡 Altın'],['red','s180','🔴 Yakut']]]};
 function avatarHTML(size=96){ const a=S.avatar;
-  return `<span class="avatar${a.aura?' a-'+esc(a.aura):''}" style="--s:${size}px"><span class="av-b">${esc(a.base)}</span>${a.hat?`<span class="av-h">${esc(a.hat)}</span>`:''}${a.eyes?`<span class="av-e">${esc(a.eyes)}</span>`:''}</span>`; }
+  return `<span class="avatar${a.aura?' a-'+esc(a.aura):''}${a.frame?' f-'+esc(a.frame):''}" style="--s:${size}px"><span class="av-b">${esc(a.base)}</span>${a.hat?`<span class="av-h">${esc(a.hat)}</span>`:''}${a.eyes?`<span class="av-e">${esc(a.eyes)}</span>`:''}${a.item?`<span class="av-i">${esc(a.item)}</span>`:''}</span>`; }
+let avTab='base';
 function avatarCard(){
-  const L=xpInfo().L, lock=(v,lv,f,lab)=>`<button class="av-opt${S.avatar[f]===v?' on':''}${L<lv?' lock':''}" data-a="avSet" data-f="${f}" data-v="${esc(v)}" ${L<lv?`disabled data-tip="Seviye ${lv}'te açılır"`:''}>${lab||esc(v)}${L<lv?`<small>Lv ${lv}</small>`:''}</button>`;
-  return `<div class="card glass rise" style="--i:3"><div class="chead"><h3>🧑‍🎨 Avatarın</h3><span class="sub">Seviye atladıkça yeni aksesuarlar açılır</span></div>
+  const L=xpInfo().L, [, items]=AV[avTab], total=Object.values(AV).reduce((s,[,l])=>s+l.length,0);
+  const opt=(v,req,lab)=>{ const ok=reqOk(req,L); return `<button class="av-opt${lab&&lab!=='—'?' wide':''}${S.avatar[avTab]===v?' on':''}${ok?'':' lock'}" data-a="avSet" data-f="${avTab}" data-v="${esc(v)}"${ok?'':` disabled data-tip="${esc(reqTip(req))}"`}>${lab||esc(v)}${ok?'':`<small>${reqLabel(req)}</small>`}</button>`; };
+  return `<div class="card glass rise" id="avBox" style="--i:3"><div class="chead"><h3>🧑‍🎨 Avatarın</h3><span class="sub">${Object.keys(AV).length} bölüm · ${total} parça · seviye ve başarımlarla açılır</span></div>
     <div class="av-row">${avatarHTML(110)}<div class="av-opts">
-      <span class="label">Karakter</span><div>${AV_BASE.map(b=>lock(b,1,'base')).join('')}</div>
-      <span class="label">Şapka</span><div>${lock('',1,'hat','—')}${AV_HATS.map(([v,l])=>lock(v,l,'hat')).join('')}</div>
-      <span class="label">Gözlük</span><div>${lock('',1,'eyes','—')}${AV_EYES.map(([v,l])=>lock(v,l,'eyes')).join('')}</div>
-      <span class="label">Aura</span><div>${lock('',1,'aura','—')}${AV_AURA.map(([v,l,n])=>lock(v,l,'aura',n)).join('')}</div></div></div></div>`;
+      <div class="rw-tabs">${Object.entries(AV).map(([f,[n,l]])=>`<button class="chip${avTab===f?' on':''}" data-a="avTab" data-f="${f}">${n} · ${l.length}</button>`).join('')}</div>
+      <div class="av-grid">${avTab==='base'?'':opt('',1,'—')}${items.map(([v,req,lab])=>opt(v,req,lab)).join('')}</div></div></div></div>`;
+}
+// tüm kilitli eşyalar: rozetteki sayaç ve "sıradaki ödül" için
+function itemCounts(){
+  const L=xpInfo().L, all=[...Object.values(AV).flatMap(([,l])=>l.map(i=>i[1])),...PETS.map(p=>p[3]),...PET_ACC.map(a=>a[2])];
+  return {all:all.length,got:all.filter(r=>reqOk(r,L)).length};
+}
+function nextReward(L){
+  const c=[...Object.values(AV).flatMap(([n,l])=>l.map(i=>[i[1],i[2]||i[0],n])),...PETS.map(p=>[p[3],p[1]+' '+p[2],'Dost']),...PET_ACC.map(a=>[a[2],a[0]+' '+a[1],'Aksesuar'])]
+    .filter(([r])=>typeof r==='number'&&r>L).sort((a,b)=>a[0]-b[0])[0];
+  return c?`${c[1]} (${c[2]}, Lv ${c[0]})`:'';
 }
 
-/* ---------- meydan okumalar ---------- */
-const CH_TPL=[['30 Gün Şekersiz','🍬',30,'Şekersiz Gün'],['21 Gün Erken Kalk','🌅',21,'Erken Kalk'],['7 Gün Ekransız Akşam','📵',7,'Ekransız Akşam'],['14 Gün Kitap','📕',14,'Kitap Oku'],['30 Gün Meditasyon','🧘',30,'Meditasyon'],['30 Gün Spor','💪',30,'Spora Git']];
+/* ---------- meydan okumalar: [ad, ikon, gün, alışkanlık adı, kategori, zorluk k/o/z] ---------- */
+const CH_CATS=[['saglik','💚 Sağlık'],['zihin','🧠 Zihin'],['uretken','💼 Üretkenlik'],['detoks','📵 Detoks'],['beslenme','🍎 Beslenme'],['sosyal','🫂 Sosyal']];
+const CH_DIFF={k:['Kolay','var(--good)'],o:['Orta','var(--gold)'],z:['Zor','var(--danger)']};
+const CH_TPL=[
+  ['7 Gün Su Challenge','💧',7,'Su İç','saglik','k'],['21 Gün Erken Kalk','🌅',21,'Erken Kalk','saglik','o'],['30 Gün Spor','💪',30,'Spora Git','saglik','z'],['21 Gün Koşu','🏃',21,'Koşu','saglik','z'],
+  ['14 Gün Soğuk Duş','🧊',14,'Soğuk Duş','saglik','z'],['30 Gün 10.000 Adım','🚶',30,'10.000 Adım','saglik','o'],['7 Gün Erken Yat','😴',7,'Erken Yat','saglik','k'],['14 Gün Esneme','🤸',14,'Esneme','saglik','k'],
+  ['30 Gün Meditasyon','🧘',30,'Meditasyon','zihin','o'],['21 Gün Şükür','🙏',21,'Şükret','zihin','k'],['14 Gün Kitap','📕',14,'Kitap Oku','zihin','o'],['30 Gün Günlük','✍️',30,'Günlük Yaz','zihin','o'],
+  ['7 Gün Nefes','🌬️',7,'Nefes Egzersizi','zihin','k'],['60 Gün Kitap Kurdu','📚',60,'Kitap Oku','zihin','z'],
+  ['21 Gün Günü Planla','📋',21,'Günü Planla','uretken','k'],['14 Gün Derin Çalışma','🎯',14,'Derin Çalışma','uretken','o'],['30 Gün Yeni Dil','🗣️',30,'Dil Çalış','uretken','o'],
+  ['30 Gün Kod','💻',30,'Kod Yaz','uretken','z'],['7 Gün Gelen Kutusu Sıfır','📥',7,'Gelen Kutusunu Boşalt','uretken','k'],
+  ['7 Gün Ekransız Akşam','📵',7,'Ekransız Akşam','detoks','o'],['7 Gün Sosyal Medyasız','🚫',7,'Sosyal Medya Yok','detoks','z'],['30 Gün Sigarasız','🚭',30,'Sigara İçme','detoks','z'],
+  ['14 Gün Yatakta Telefon Yok','🛏️',14,'Yatakta Telefon Yok','detoks','o'],['21 Gün Oyunsuz','🎮',21,'Oyun Oynama','detoks','o'],
+  ['30 Gün Şekersiz','🍬',30,'Şekersiz Gün','beslenme','z'],['14 Gün Fast Food Yok','🍔',14,'Fast Food Yok','beslenme','o'],['21 Gün Sebze','🥦',21,'Sebze Ye','beslenme','k'],
+  ['7 Gün Gazlı İçecek Yok','🥤',7,'Gazlı İçecek Yok','beslenme','k'],
+  ['7 Gün İyilik','💝',7,'Bir İyilik Yap','sosyal','k'],['14 Gün Aileyi Ara','📞',14,'Aileyi Ara','sosyal','k'],['21 Gün Yeni Biriyle Konuş','👋',21,'Yeni Biriyle Konuş','sosyal','o'],
+  ['30 Gün Arkadaşa Mesaj','💬',30,'Bir Arkadaşa Yaz','sosyal','k']];
 function chalCard(c,i){
   const st=chalStat(c), pct=Math.min(1,st.ok/c.days);
   return `<div class="ccard rise${st.complete?' won':st.failed?' lost':''}" style="--i:${i}" data-id="${esc(c.id)}"><button class="mini-btn del" data-a="chDel" aria-label="Sil">🗑</button>
     <div class="qtop"><span style="font-size:24px">${esc(c.icon)}</span><div><b>${esc(c.name)}</b><div class="sub">${st.h?`${iconText(st.h.icon)} ${esc(st.h.name)}`:'alışkanlık silinmiş'} · ${c.days} gün</div></div></div>
     <div class="track"><i style="--h:${st.complete?145:st.failed?0:38};width:${pct*100}%"></i></div>
-    <span class="sub">${st.complete?'🏆 Tamamlandı! +300 XP':st.failed?`💔 Zincir koptu (${st.ok}/${c.days})`:`${st.ok}/${c.days} gün · ${st.left} gün kaldı`}</span>
+    <span class="sub">${st.complete?`🏆 Tamamlandı! +${chalXP(c)} XP`:st.failed?`💔 Zincir koptu (${st.ok}/${c.days})`:`${st.ok}/${c.days} gün · ${st.left} gün kaldı · ödül +${chalXP(c)} XP`}</span>
     ${st.failed?'<button class="btn ghost sm" data-a="chRestart">↻ Yeniden başla</button>':''}</div>`;
 }
+let chCat='';
 function chalSection(){
-  return `<div class="card glass rise" style="--i:4;margin-bottom:16px"><div class="chead"><h3>🏁 Meydan Okumalar</h3><span class="sub">Her gün yap, zinciri koparma · tamamlayınca +300 XP</span></div>
+  const list=CH_TPL.map((t,i)=>[t,i]).filter(([t])=>!chCat||t[4]===chCat);
+  return `<div class="card glass rise" id="chBox" style="--i:4;margin-bottom:16px"><div class="chead"><h3>🏁 Meydan Okumalar</h3><span class="sub">${CH_TPL.length} hazır meydan okuma · her gün yap, zinciri koparma · 7 gün +150 · 21 gün +300 · 30+ gün +600 XP</span></div>
     <div class="quits">${S.challenges.map(chalCard).join('')||'<p class="hint">Aşağıdan bir meydan okuma seç ya da kendininkini oluştur.</p>'}</div>
-    <div class="tpls" style="margin-top:12px">${CH_TPL.map((t,i)=>`<button class="chip" data-a="chTpl" data-i="${i}">${t[1]} ${esc(t[0])}</button>`).join('')}</div>
-    ${active().length?`<form class="qform" id="chForm" style="margin-top:10px"><select id="chHabit" aria-label="Alışkanlık">${active().map(h=>`<option value="${esc(h.id)}">${esc(iconText(h.icon))} ${esc(h.name)}</option>`).join('')}</select><input type="number" id="chDays" min="3" max="365" value="21" aria-label="Gün sayısı" style="max-width:80px"><button class="btn">Başlat</button></form>`:''}</div>`;
+    <div class="rw-tabs" style="margin-top:12px">${[['',`Tümü · ${CH_TPL.length}`],...CH_CATS].map(([c,n])=>`<button class="chip${chCat===c?' on':''}" data-a="chCat" data-c="${c}">${n}</button>`).join('')}</div>
+    <div class="ch-grid">${list.map(([t,i])=>`<button class="ch-tpl" data-a="chTpl" data-i="${i}"><span class="che">${t[1]}</span><b>${esc(t[0])}</b><small>Her gün “${esc(t[3])}”</small><span class="chd" style="color:${CH_DIFF[t[5]][1]}">${CH_DIFF[t[5]][0]} · +${chalXP({days:t[2]})} XP</span></button>`).join('')}</div>
+    ${active().length?`<form class="qform" id="chForm" style="margin-top:10px"><select id="chHabit" aria-label="Alışkanlık">${active().map(h=>`<option value="${esc(h.id)}">${esc(iconText(h.icon))} ${esc(h.name)}</option>`).join('')}</select><input type="number" id="chDays" min="3" max="365" value="21" aria-label="Gün sayısı" style="max-width:80px"><button class="btn">Kendi meydan okumanı başlat</button></form>`:''}</div>`;
 }
 function startChallenge(name,icon,habitId,days){
   S.challenges.push({id:uid(),name:name.slice(0,60),icon,habitId,days,start:todayKey()}); rev++; save(); render(); sfx('win'); toast(`🏁 ${name} başladı! Her gün yapmayı unutma`);
@@ -466,9 +512,21 @@ function vacationHTML(){
 
 /* ---------- eylemler ---------- */
 const XA={
-  petPat:el=>{ const e=el.querySelector('.pet-e'); if(e){ e.classList.remove('jump'); void e.offsetWidth; e.classList.add('jump'); } const r=el.getBoundingClientRect(); burst(r.left+r.width/2,r.top+20,10,330); sfx('pop',3); floatText(r.left+r.width/2,r.top,'💕'); },
-  petType:el=>{ S.pet.type=el.dataset.t; save(); render(); },
-  avSet:el=>{ S.avatar[el.dataset.f]=el.dataset.v; save(); render(); sfx('tick'); },
+  petPat:el=>{ const e=(el.closest('.pet-card')||el).querySelector('.pet-e'); if(e){ e.classList.remove('jump'); void e.offsetWidth; e.classList.add('jump'); } const r=el.getBoundingClientRect(); burst(r.left+r.width/2,r.top+20,10,330); sfx('pop',3); floatText(r.left+r.width/2,r.top,'💕'); petBond(1); },
+  petFeed:el=>{ const tk=todayKey();
+    if(S.pet.fed===tk){ toast('😋 Bugünkü ödül mamasını yedi, yarın yine!'); return; }
+    if(!(S.checks[tk]||[]).length){ toast('🍖 Önce bir alışkanlık yap, mamayı birlikte hak edelim'); return; }
+    S.pet.fed=tk; petBond(3); refreshPet(); const r=el.getBoundingClientRect(); floatText(r.left+r.width/2,r.top,'🍖 +3 bağ'); sfx('win'); toast(`😋 Nom nom! ${S.pet.name} bayıldı`); },
+  petPlay:el=>{ const tk=todayKey();
+    if(S.pet.played===tk){ toast('😴 Bugün çok oynadık, biraz dinlensin'); return; }
+    S.pet.played=tk; petBond(3); refreshPet(); const r=el.getBoundingClientRect(); burst(r.left+r.width/2,r.top,18,50); floatText(r.left+r.width/2,r.top,'🎾 +3 bağ'); sfx('pop',4); toast(`🎾 Yakaladı! ${S.pet.name} çok eğlendi`); },
+  petType:el=>{ const p=PETS.find(x=>x[0]===el.dataset.t); if(!p||xpInfo().L<p[3]) return; S.pet.type=p[0]; save(); refreshPet(); sfx('tick'); },
+  petAcc:el=>{ const v=el.dataset.v, a=PET_ACC.find(x=>x[0]===v); if(!a||xpInfo().L<a[2]) return; const had=!S.pet.acc; S.pet.acc=S.pet.acc===v?'':v; save(); if(had&&S.pet.acc){ rev++; checkAch(); } refreshPet(); sfx('tick'); },
+  avTab:el=>{ avTab=el.dataset.f; const b=$('#avBox'); if(b){ const t=document.createElement('div'); t.innerHTML=avatarCard(); t.firstElementChild.classList.remove('rise'); b.replaceWith(t.firstElementChild); } },
+  avSet:el=>{ const f=el.dataset.f, v=el.dataset.v, it=(AV[f]||[,[]])[1].find(i=>i[0]===v);
+    if(v&&(!it||!reqOk(it[1],xpInfo().L))) return; const hat=f==='hat'&&v&&!S.avatar.hat; S.avatar[f]=v; save(); if(hat){ rev++; checkAch(); } XA.avTab({dataset:{f}}); sfx('tick'); },
+  chCat:el=>{ chCat=el.dataset.c; const b=$('#chBox'); if(b){ const t=document.createElement('div'); t.innerHTML=chalSection(); t.firstElementChild.classList.remove('rise'); b.replaceWith(t.firstElementChild); } },
+  achCat:el=>{ achCat=el.dataset.c; const b=$('#achBox'); if(b) b.outerHTML=achHTML(); },
   chTpl:el=>{ const [name,icon,days,hn]=CH_TPL[+el.dataset.i], h=findOrCreateHabit(hn,icon); if(h.archived) h.archived=false; if(!h.created&&!Object.values(S.checks).some(a=>a.includes(h.id))) h.created=todayKey(); startChallenge(name,icon,h.id,days); },
   chDel:el=>{ if(!arm(el,'Sil?')) return; const id=el.closest('.ccard').dataset.id, before=JSON.stringify(S); S.challenges=S.challenges.filter(c=>c.id!==id); pushUndo('Meydan okuma silindi',[{full:before}]); rev++; save(); render(); },
   chRestart:el=>{ const c=S.challenges.find(x=>x.id===el.closest('.ccard').dataset.id); c.start=todayKey(); rev++; save(); render(); toast('↻ Yeniden başladı — bu sefer olacak! 💪'); },

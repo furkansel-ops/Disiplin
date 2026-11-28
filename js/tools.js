@@ -34,20 +34,51 @@ function hLi(h){
 function renderHabitDlg(focusId){
   const arch=S.habits.filter(h=>h.archived);
   $('#habitForm').innerHTML=`<h3>Alışkanlıklarını Yönet</h3>
-    <p class="note">İsmi yerinde düzenle, ↑↓ ile sırala, ⚙ ile ikon, günler, kategori, zorluk, sayısal hedef ve zamanlayıcıyı ayarla.</p>
-    <ul class="hlist" id="hlist">${active().map(hLi).join('')}</ul>
     <div class="add-row"><span class="ibtn" id="newIconBtn">${iconHTML(newIcon)}</span><input id="newName" class="hi-name" maxlength="60" placeholder="Yeni alışkanlık…" aria-label="Yeni alışkanlık adı"><button type="button" class="btn" data-a="hadd">Ekle</button></div>
     <div class="picker">${pickerHTML('new')}</div>
-    <h4>Hazır paketler</h4><div class="tpls">${Object.keys(TEMPLATES).map(t=>`<button type="button" class="chip" data-a="tpl" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+    <div id="qaBox">${qaHTML()}</div>
+    <h4>Alışkanlıkların · ${active().length}</h4>
+    <p class="note">İsmi yerinde düzenle, ↑↓ ile sırala, ⚙ ile ikon, günler, kategori, zorluk, sayısal hedef ve zamanlayıcıyı ayarla.</p>
+    <ul class="hlist" id="hlist">${active().map(hLi).join('')}</ul>
     ${arch.length?`<h4>📦 Arşiv</h4><ul class="hlist">${arch.map(h=>`<li data-id="${esc(h.id)}" style="--h:${h.hue}"><div class="hrow"><span class="ibtn">${iconHTML(h.icon)}</span><span class="hi-name" style="padding:0 6px">${esc(h.name)}</span><button type="button" class="btn ghost sm" data-a="hrestore">↩ Geri getir</button><button type="button" class="mini-btn del" data-a="hdel" aria-label="Kalıcı sil">🗑</button></div></li>`).join('')}</ul>`:''}
     <footer><button class="btn" value="close">Bitti</button></footer>`;
   if(focusId){ const li=$(`#hlist li[data-id="${CSS.escape(focusId)}"]`); if(li){ openMore(li); later(()=>li.scrollIntoView({block:'center'})); li.querySelector('.hi-name').focus(); } }
+}
+/* hızlı ekle: kütüphaneden tek dokunuşla alışkanlık, paket kartları */
+let qaCat='pop', qaQ='', qaPack='';
+const haveName=()=>new Set(S.habits.map(h=>h.name.toLocaleLowerCase('tr'))); // arşivdekiler de sayılır (paket ekleme ile aynı kural)
+const qaChip=(have,n,e,t,attrs)=>{ const on=have.has(n.toLocaleLowerCase('tr')); return `<button type="button" class="qa-h${on?' on':''}" ${attrs}${on?' disabled':''}><span>${esc(e)}</span>${esc(n)}${t?`<small>${esc(t)}</small>`:''}<b>${on?'✓':'+'}</b></button>`; };
+function qaListHTML(){
+  const have=haveName(), q=qaQ.trim().toLocaleLowerCase('tr');
+  const list=q?HABIT_LIB.filter(x=>x.n.toLocaleLowerCase('tr').includes(q)).slice(0,40):qaCat==='pop'?POPULAR.map(n=>HABIT_LIB.find(x=>x.n===n)).filter(Boolean):HABIT_LIB.filter(x=>x.c===qaCat);
+  return list.map(x=>qaChip(have,x.n,x.e,x.t,`data-a="qaAdd" data-i="${x.i}"`)).join('')||'<p class="hint">Bulunamadı. Yukarıdan kendin ekleyebilirsin.</p>';
+}
+function qaHTML(){
+  const have=haveName();
+  return `<h4>Hızlı ekle · ${HABIT_LIB.length} öneri</h4>
+    <input id="qaSearch" class="qa-search" type="search" placeholder="Ara: kitap, su, koşu, ders…" value="${esc(qaQ)}" aria-label="Öneri ara">
+    <div class="rw-tabs qa-tabs">${[['pop','⭐ Popüler'],...LIB_CATS].map(([c,n])=>`<button type="button" class="chip${qaCat===c&&!qaQ?' on':''}" data-a="qaCat" data-c="${c}">${n}</button>`).join('')}</div>
+    <div class="qa-list" id="qaList">${qaListHTML()}</div>
+    <h4>Hazır paketler · ${Object.keys(TEMPLATES).length}</h4>
+    <div class="pk-grid">${Object.entries(TEMPLATES).map(([t,l])=>{ const sp=t.lastIndexOf(' '), nm=t.slice(0,sp), ic=t.slice(sp+1), open=qaPack===t, n=l.filter(x=>!have.has(x[0].toLocaleLowerCase('tr'))).length;
+      return `<div class="pk${open?' open':''}"><div class="pk-top"><span class="pk-i">${esc(ic)}</span><div><b>${esc(nm)}</b><small>${l.length} alışkanlık${n<l.length?` · ${l.length-n} eklendi`:''}</small></div></div>
+        ${open?`<div class="qa-list">${l.map(([hn,he,o],j)=>qaChip(have,hn,he,'',`data-a="qaPackAdd" data-t="${esc(t)}" data-j="${j}"`)).join('')}</div>
+          <div class="pk-btns"><button type="button" class="btn sm" data-a="tpl" data-t="${esc(t)}"${n?'':' disabled'}>Hepsini ekle</button><button type="button" class="btn ghost sm" data-a="qaPack" data-t="">Kapat</button></div>`
+        :`<span class="pk-ic">${l.map(x=>esc(x[1])).join(' ')}</span><button type="button" class="btn ghost sm" data-a="qaPack" data-t="${esc(t)}">Paketi aç</button>`}</div>`; }).join('')}</div>`;
+}
+function qaRefresh(){ const b=$('#qaBox'); if(b){ const y=b.closest('dialog')?.scrollTop; b.innerHTML=qaHTML(); if(y!=null) b.closest('dialog').scrollTop=y; } }
+function qaNew(name,icon,o){
+  if(haveName().has(name.toLocaleLowerCase('tr'))){ toast('Bu alışkanlık zaten var'); return; }
+  const h=normHabit({...o,id:uid(),name,icon,hue:HUES[S.habits.length%HUES.length],created:todayKey()},S.habits.length);
+  S.habits.push(h); hDirty=true; rev++; save();
+  $('#hlist').insertAdjacentHTML('beforeend',hLi(h)); sfx('pop'); toast(`✨ ${name} eklendi`);
 }
 // ⚙ paneli açılırken ikon seçici (≈70 düğme) o anda çizilir; pencere 8 alışkanlıkla ~600 düğme daha hafif açılır
 function openMore(li){ const p=li.querySelector('[data-pick]'); if(p&&!p.children.length) p.innerHTML=pickerHTML(p.dataset.pick); li.classList.add('open'); }
 function openHabits(focusId){ renderHabitDlg(focusId); const d=$('#habitDlg'); if(!d.open) d.showModal(); if(!focusId) $('#newName').focus(); }
 const habitOf=el=>hab(el.closest('li').dataset.id);
 $('#habitForm').addEventListener('input',e=>{
+  if(e.target.id==='qaSearch'){ qaQ=e.target.value; $('#qaList').innerHTML=qaListHTML(); $$('.qa-tabs .chip').forEach(c=>c.classList.toggle('on',!qaQ&&c.dataset.c===qaCat)); return; }
   const f=e.target.dataset.f, h=f&&habitOf(e.target); if(!h) return;
   const raw=e.target.value.trim();
   if(f==='name'||f==='icon'){ if(!raw) return; h[f]=raw.slice(0,f==='icon'?12:60); if(f==='icon') e.target.closest('li').querySelector('.ibtn').innerHTML=iconHTML(h.icon); }
@@ -347,6 +378,10 @@ const TA={
     pushUndo(`${h.name} silindi`,[{full:before}]); hDirty=true; rev++; save();
     li.animate([{opacity:1},{opacity:0,transform:'scale(.95)'}],{duration:dur(220)}).finished.then(()=>li.remove());
   },
+  qaCat:el=>{ qaCat=el.dataset.c; qaQ=''; qaRefresh(); },
+  qaPack:el=>{ qaPack=el.dataset.t; qaRefresh(); },
+  qaAdd:el=>{ const x=HABIT_LIB[+el.dataset.i]; if(x){ qaNew(x.n,x.e,x.o); qaRefresh(); } },
+  qaPackAdd:el=>{ const x=(TEMPLATES[el.dataset.t]||[])[+el.dataset.j]; if(x){ qaNew(x[0],x[1],x[2]||{}); qaRefresh(); } },
   tpl:el=>{ const list=TEMPLATES[el.dataset.t]; let n=0;
     list.forEach(([name,icon,o])=>{ if(S.habits.some(h=>h.name.toLocaleLowerCase('tr')===name.toLocaleLowerCase('tr'))) return; S.habits.push(normHabit({id:uid(),name,icon,hue:HUES[S.habits.length%HUES.length],...o,created:todayKey()},S.habits.length)); n++; });
     hDirty=true; rev++; save(); renderHabitDlg(); toast(n?`✨ ${n} alışkanlık eklendi`:'Bu paketteki alışkanlıklar zaten var'); if(n) sfx('win'); },
