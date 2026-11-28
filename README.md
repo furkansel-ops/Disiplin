@@ -21,6 +21,8 @@ python -m http.server 5173
 
 **Arayüz:** Uygulama Bugün ekranıyla açılır. Beş bölüm var: Bugün · Takvim · İstatistik · Ödüller · Günlük. Tablette ve bilgisayarda menü solda, telefonda altta durur. Takvim'de ay ‹ › ile seçilir; İstatistik'te yıl özeti ile içgörüler arasında geçilir.
 
+**Bugün ekranı bölüm bölüm:** ✅ Alışkanlıklar · 🎯 Görevler (boss, seviye) · 📅 Hafta (haftalık özet ve alışkanlık × gün tablosu) · 💬 Söz & Dost. Aynı anda tek bölüm görünür; sekmelerde sayaçlar durur. Kaydırarak ya da ← → ile geçilir, son açılan sekme hatırlanır.
+
 **Takip**
 - 12 ay için üç görünüm: Tablo, Takvim ve Bugün.
 - Sayısal hedefler (50 soru, 10.000 adım, 3 litre…). Dokununca değer penceresi açılır: sayıyı yaz ya da +5 / +10 / +25 gibi hızlı düğmelerle ekle. Artış miktarı alışkanlık ayarından değiştirilebilir.

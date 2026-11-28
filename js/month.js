@@ -220,48 +220,102 @@ function weekHTML(){
     return `<button class="${k===tk?'now':''}" data-a="day" data-k="${k}"${fut?' disabled':''} data-tip="${d} ${MONTHS[m]}${fut?'':`\n${ds.c}/${ds.s} tamamlandı`}"><i style="--p:${fut?0:ds.p.toFixed(2)}"></i>${DAYN[wdK(k)]}</button>`; }).join('');
 }
 const heroSub=ds=>ds.s?(ds.perfect?'Mükemmel gün! Hepsini bitirdin. 🏆':`Mükemmel gün için ${ds.s-ds.c} alışkanlık kaldı${ds.vac?' · 🏝️ Tatil modu':ds.joker?' · 🃏 Joker gün':''}`):(active().length?'Bugün planlı alışkanlık yok':'Başlamak için bir alışkanlık ekle');
+// Bugün sayfası sekmelere bölünür: aynı anda tek bölüm görünür
+const TTABS=[['liste','✅','Alışkanlıklar'],['gorev','🎯','Görevler'],['hafta','📅','Hafta'],['soz','💬','Söz & Dost']];
+const curTab=()=>TTABS.some(t=>t[0]===S.settings.ttab)?S.settings.ttab:'liste';
+function ttabBadge(id,k){
+  if(id==='liste'){ const ds=dayStat(k); return ds.s?`${ds.c}/${ds.s}`:''; }
+  if(id==='gorev'){ const q=questsFor(k); return q.length?`${q.filter(x=>x.ok()).length}/${q.length}`:''; }
+  if(id==='hafta'){ const w=weekStats(mondayOf(k)); return w.s?`%${Math.round(w.rate*100)}`:''; }
+  return '';
+}
+function ttabsHTML(k){
+  return `<div class="ttabs" role="tablist" aria-label="Bugün bölümleri">${TTABS.map(([id,e,l])=>{ const on=curTab()===id, b=ttabBadge(id,k);
+    return `<button role="tab" id="tt-${id}" class="ttab${on?' on':''}" data-a="ttab" data-t="${id}" aria-selected="${on}" aria-controls="tpane"><span class="te" aria-hidden="true">${e}</span><span class="tl">${l}</span><span class="tb">${b}</span></button>`; }).join('')}</div>`;
+}
+// haftalık alışkanlık × gün tablosu (hücreye dokununca işaretlenir)
+function wcellHTML(h,k){
+  const tk=todayKey(), on=isOn(k,h.id), sc=schedK(h,k), fut=k>tk, [,m,d]=pk(k);
+  return `<button class="wcell${on?' on':''}${sc?'':' off'}${k===tk?' today':''}" data-a="cell" data-k="${k}" data-h="${esc(h.id)}" style="--h:${h.hue}" aria-pressed="${on}" aria-label="${esc(h.name)}, ${d} ${MONTHS[m]}"${fut?' disabled':''}>${on?CHECK:''}</button>`;
+}
+function weekGridHTML(){
+  const mon=mondayOf(todayKey()), ks=[...Array(7)].map((_,i)=>addDays(mon,i)), tk=todayKey();
+  if(!active().length) return EMPTY;
+  return `<div class="wgrid"><span></span>${ks.map(k=>`<span class="wd${k===tk?' now':''}">${DAYN[wdK(k)]}<b>${pk(k)[2]}</b></span>`).join('')}
+    ${active().map(h=>`<button class="wname" data-a="detail" data-id="${esc(h.id)}">${iconHTML(h.icon)} <span>${esc(h.name)}</span></button>${ks.map(k=>wcellHTML(h,k)).join('')}`).join('')}</div>`;
+}
+function updWCell(el){
+  const h=hab(el.dataset.h); if(!h) return; const k=el.dataset.k, on=isOn(k,h.id);
+  el.classList.toggle('on',on); el.classList.toggle('off',!schedK(h,k)); el.setAttribute('aria-pressed',on); el.innerHTML=on?CHECK:'';
+}
+function weekSumHTML(){
+  const mon=mondayOf(todayKey()), w=weekStats(mon), p=weekStats(addDays(mon,-7)), d=Math.round((w.rate-p.rate)*100);
+  return `<div class="wsum-g">${w.s?grade(w.rate):'–'}</div><div><b class="big">%${fmt(w.rate*100,0)}</b><div class="sub">${w.c}/${w.s} planlı tik · ${w.perfect} mükemmel gün</div>${p.s?`<div class="tr ${d>=0?'up':'down'}" style="margin:4px 0 0">${d>=0?'↑':'↓'} geçen haftaya göre ${Math.abs(d)} puan</div>`:''}</div>`;
+}
+function tpaneHTML(id,k){
+  const now=new Date(), ds=dayStat(k);
+  if(id==='gorev'){ const b=bossOf(now.getFullYear(),now.getMonth()), x=xpInfo();
+    return `<div class="tp-2">
+      <div class="card glass rise" style="--i:1"><div class="chead"><h3>🎯 Günün görevleri</h3><span class="sub">her biri +20 XP · her gün yenilenir</span></div><div id="qList" class="qlist">${questsHTML(k)}</div></div>
+      <div class="tp-col">
+        <div class="boss glass rise${b.dead?' dead':''}" style="--i:2" id="boss"><span class="boss-e" id="bossE">${b.e}</span><div><span class="label">Ayın boss'u · her tik 1 hasar · yenince +200 XP</span><b id="bossName">${b.name}</b><div class="hp"><i id="bossHp"></i></div><span class="sub" id="bossTxt"></span></div></div>
+        <button class="card glass rise lvl-mini" style="--i:3" data-a="go" data-go="14"><span class="lvl-num"><small>SEVİYE</small>${x.L}</span><span style="flex:1;min-width:0"><b>${fmt(x.total)} XP</b><span class="lvl-bar"><i style="width:${x.cur/x.need*100}%"></i></span><span class="sub">Seviye ${x.L+1} için ${fmt(x.need-x.cur)} XP · Ödüller →</span></span></button>
+      </div></div>`; }
+  if(id==='hafta') return `<div class="card glass rise wsum" style="--i:1"><div id="wSum" class="wsum-in">${weekSumHTML()}</div><div class="week7" id="week7">${weekHTML()}</div><button class="btn ghost sm" data-a="report">📋 Haftalık rapor kartı</button></div>
+      <div class="card glass rise" style="--i:2"><div class="chead"><h3>Bu haftanın tablosu</h3><span class="sub">Hücreye dokun: işaretle</span></div><div class="wgrid-wrap">${weekGridHTML()}</div></div>`;
+  if(id==='soz') return `<div class="tp-2"><figure class="quote glass rise" style="--i:1" id="quote">${quoteInner()}</figure>${petCard()}</div>`;
+  return `<div class="hero glass rise" style="--i:1">
+      <div class="hero-ring">${ringSVG(`id="tRing" style="stroke-dashoffset:${C*(1-ds.p)}"`)}<b id="tPct">%${Math.round(ds.p*100)}</b></div>
+      <div class="hero-t"><b id="tDone">${ds.c} / ${ds.s} tamamlandı</b><span class="sub" id="tSub">${heroSub(ds)}</span>
+        <div class="hero-b"><button class="btn ghost sm" data-a="day" data-k="${k}">📝 Not / ruh hâli</button><button class="btn ghost sm" data-a="breath">🧘 Nefes</button></div></div>
+      <div id="nextCard">${nextCardHTML(k)}</div></div>
+    <div id="tList" class="rise" style="--i:2">${todayListHTML(k)}</div>`;
+}
 function renderToday(){
-  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), k=todayKey(), ds=dayStat(k), b=bossOf(y,m), fg=!alertDismissed?forgotten():[], tr=trialsDue();
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), k=todayKey(), b=bossOf(y,m), fg=!alertDismissed?forgotten():[], tr=trialsDue();
   if(b.dead) S.bosses[`${y}-${m}`]=1; // önceden yenilmiş boss tekrar kutlanmasın
   $('#view').innerHTML=`<section class="tpage">
     ${tourHTML()}
     ${fg.length?`<div class="alerts rise">💡 <b>Biraz ihmal edildi:</b>${fg.map(([h,n])=>`<button class="chip" data-a="detail" data-id="${esc(h.id)}">${iconHTML(h.icon)} ${esc(h.name)} · ${n} gündür boş</button>`).join('')}<span style="flex:1"></span><button class="icon-btn sm" data-a="dismissAlert" aria-label="Uyarıyı kapat">✕</button></div>`:''}
     ${tr.map(h=>`<div class="alerts rise trial">🧪 <b>${esc(h.name)}</b> denemesi bitti: ${h.trial} günde %${fmt(trialRate(h)*100)} başarı. Devam mı?<span style="flex:1"></span><button class="btn sm" data-a="trialKeep" data-id="${esc(h.id)}">💪 Devam et</button><button class="btn ghost sm" data-a="trialDrop" data-id="${esc(h.id)}">📦 Bırak (arşivle)</button></div>`).join('')}
-    <div class="tp-grid">
-      <div class="tp-main">
-        <div class="hero glass rise" style="--i:1">
-          <div class="hero-ring">${ringSVG(`id="tRing" style="stroke-dashoffset:${C*(1-ds.p)}"`)}<b id="tPct">%${Math.round(ds.p*100)}</b></div>
-          <div class="hero-t"><b id="tDone">${ds.c} / ${ds.s} tamamlandı</b><span class="sub" id="tSub">${heroSub(ds)}</span>
-            <div class="hero-b"><button class="btn ghost sm" data-a="day" data-k="${k}">📝 Not / ruh hâli</button><button class="btn ghost sm" data-a="breath">🧘 Nefes</button></div></div>
-          <div id="nextCard">${nextCardHTML(k)}</div>
-        </div>
-        <div id="tList" class="rise" style="--i:2">${todayListHTML(k)}</div>
-      </div>
-      <aside class="tp-side">
-        <div class="card glass rise" style="--i:2"><div class="chead"><h3>Günün görevleri</h3><span class="sub">her biri +20 XP</span></div><div id="qList" class="qlist">${questsHTML(k)}</div></div>
-        <div class="card glass rise" style="--i:3"><div class="chead"><h3>Bu hafta</h3></div><div class="week7" id="week7">${weekHTML()}</div></div>
-        <div class="boss glass rise${b.dead?' dead':''}" style="--i:4" id="boss"><span class="boss-e" id="bossE">${b.e}</span><div><span class="label">Ayın boss'u · yenince +200 XP</span><b id="bossName">${b.name}</b><div class="hp"><i id="bossHp"></i></div><span class="sub" id="bossTxt"></span></div></div>
-        <figure class="quote glass rise" style="--i:5" id="quote">${quoteInner()}</figure>
-        <div id="petMini" class="rise" style="--i:6">${petMini()}</div>
-      </aside>
-    </div></section>`;
+    ${ttabsHTML(k)}
+    <div id="tpane" class="tpane" role="tabpanel" aria-labelledby="tt-${curTab()}">${tpaneHTML(curTab(),k)}</div></section>`;
   later(()=>updBoss(false));
 }
+function setTab(id,dir){
+  if(!TTABS.some(t=>t[0]===id)) return;
+  S.settings.ttab=id; save();
+  $$('.ttab').forEach(b=>{ const on=b.dataset.t===id; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+  const p=$('#tpane'); if(!p) return;
+  p.setAttribute('aria-labelledby','tt-'+id); p.innerHTML=tpaneHTML(id,todayKey()); later(()=>updBoss(false));
+  if(!RM.matches) p.animate([{opacity:0,transform:`translateX(${(dir||1)*18}px)`},{opacity:1,transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'});
+}
+// kaydırma / oklar: sekmeler arasında gezer; uçta false döner (bölüm değişsin diye)
+function stepTab(d){ const i=TTABS.findIndex(t=>t[0]===curTab()), j=i+d; if(j<0||j>=TTABS.length) return false; setTab(TTABS[j][0],d); return true; }
 // veri değişince sayfayı yeniden çizmeden günceller (animasyonlar ve tıklanan düğme yerinde kalır)
 function updTodayPage(){
-  const k=todayKey(), ds=dayStat(k), list=$('#tList'); if(!list) return;
-  const groups=todayGroups(k), nx=nextHabit(k), want=groups.flatMap(g=>g.list).map(h=>h.id).join(','), have=$$('.trw',list).map(r=>r.dataset.h).join(',');
-  if(want!==have||!active().length) list.innerHTML=todayListHTML(k);
-  else {
-    $$('.trw',list).forEach(r=>{ const h=hab(r.dataset.h), on=isOn(k,h.id), isNext=nx===h, c=r.querySelector('.tchk');
-      r.className=`trw${on?' on':''}${isNext?' next':''}`; r.querySelector('.trw-c').innerHTML=rowInner(h,k,on,isNext);
-      c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); c.setAttribute('aria-label',chkLabel(h,on)); c.innerHTML=chkInner(h,k,on); });
-    $$('.tgrp .cnt',list).forEach((c,i)=>{ const g=groups[i]; if(g) c.textContent=`${g.list.filter(h=>isOn(k,h.id)).length} / ${g.list.length}`; });
+  const k=todayKey(), ds=dayStat(k);
+  $$('.ttab').forEach(b=>{ const t=b.querySelector('.tb'); if(t) t.textContent=ttabBadge(b.dataset.t,k); });
+  const list=$('#tList');
+  if(list){
+    const groups=todayGroups(k), nx=nextHabit(k), want=groups.flatMap(g=>g.list).map(h=>h.id).join(','), have=$$('.trw',list).map(r=>r.dataset.h).join(',');
+    if(want!==have||!active().length) list.innerHTML=todayListHTML(k);
+    else {
+      $$('.trw',list).forEach(r=>{ const h=hab(r.dataset.h), on=isOn(k,h.id), isNext=nx===h, c=r.querySelector('.tchk');
+        r.className=`trw${on?' on':''}${isNext?' next':''}`; r.querySelector('.trw-c').innerHTML=rowInner(h,k,on,isNext);
+        c.classList.toggle('on',on); c.setAttribute('aria-pressed',on); c.setAttribute('aria-label',chkLabel(h,on)); c.innerHTML=chkInner(h,k,on); });
+      $$('.tgrp .cnt',list).forEach((c,i)=>{ const g=groups[i]; if(g) c.textContent=`${g.list.filter(h=>isOn(k,h.id)).length} / ${g.list.length}`; });
+    }
+    const r=$('#tRing'); if(r) r.style.strokeDashoffset=C*(1-ds.p);
+    $('#tPct').textContent=`%${Math.round(ds.p*100)}`; $('#tDone').textContent=`${ds.c} / ${ds.s} tamamlandı`; $('#tSub').textContent=heroSub(ds);
+    $('#nextCard').innerHTML=nextCardHTML(k);
   }
-  const r=$('#tRing'); if(r) r.style.strokeDashoffset=C*(1-ds.p);
-  $('#tPct').textContent=`%${Math.round(ds.p*100)}`; $('#tDone').textContent=`${ds.c} / ${ds.s} tamamlandı`; $('#tSub').textContent=heroSub(ds);
-  $('#nextCard').innerHTML=nextCardHTML(k); $('#qList').innerHTML=questsHTML(k); $('#week7').innerHTML=weekHTML();
-  const pm=$('#petMini'); if(pm) pm.innerHTML=petMini();
+  if($('#qList')) $('#qList').innerHTML=questsHTML(k);
+  if($('#week7')) $('#week7').innerHTML=weekHTML();
+  if($('#wSum')) $('#wSum').innerHTML=weekSumHTML();
+  $$('.wcell').forEach(updWCell);
+  const pc=$('#view .pet-card'); if(pc){ const t=document.createElement('div'); t.innerHTML=petCard(); t.firstElementChild.classList.remove('rise'); pc.replaceWith(t.firstElementChild); }
+  if($('.lvl-mini')){ const x=xpInfo(), lm=$('.lvl-mini'); lm.querySelector('.lvl-num').innerHTML=`<small>SEVİYE</small>${x.L}`; lm.querySelector('b').textContent=`${fmt(x.total)} XP`; lm.querySelector('.lvl-bar i').style.width=x.cur/x.need*100+'%'; }
   updBoss(true);
 }
 

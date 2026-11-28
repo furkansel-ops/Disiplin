@@ -115,6 +115,7 @@ const A={
   goToday:()=>A.nav({dataset:{s:'bugun'}}),
   nav:el=>{ const s=el.dataset.s, n=new Date(); if(s==='bugun'&&S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); if(view===TODAY){ render(); return; } } go(secView(s)); },
   mprev:()=>stepMonth(-1), mnext:()=>stepMonth(1),
+  ttab:el=>{ const i=TTABS.findIndex(t=>t[0]===el.dataset.t), j=TTABS.findIndex(t=>t[0]===curTab()); if(i!==j) setTab(el.dataset.t,i>j?1:-1); },
   mnow:()=>{ const n=new Date(); if(S.year!==n.getFullYear()){ S.year=n.getFullYear(); rev++; save(); } lastMonth=n.getMonth(); if(view===lastMonth) render(); else go(lastMonth); },
   dismissAlert:el=>{ alertDismissed=true; const a=el.closest('.alerts'); a.animate([{opacity:1},{opacity:0,transform:'translateY(-6px)'}],{duration:dur(250)}).finished.then(()=>a.remove()); },
   cell:el=>{ const h=hab(el.dataset.h); if(h&&h.target) openVal(el.dataset.k,h,el); else changeHabit(el.dataset.k,h,'toggle',el); },
@@ -185,7 +186,7 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&t.matches?.('[data-a]:not(button):not(input)')){ e.preventDefault(); t.click(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!typing){ e.preventDefault(); undo(); return; }
   if(typing||dlg||e.ctrlKey||e.metaKey||e.altKey) return;
-  if((e.key==='ArrowRight'||e.key==='ArrowLeft')&&t===document.body){ const d=e.key==='ArrowRight'?1:-1; if(view<12) stepMonth(d); else stepSection(d); }
+  if((e.key==='ArrowRight'||e.key==='ArrowLeft')&&t===document.body){ const d=e.key==='ArrowRight'?1:-1; if(view<12) stepMonth(d); else if(!(view===TODAY&&stepTab(d))) stepSection(d); }
   if(/^[1-9]$/.test(e.key)){ // hızlı giriş: 1–9 bugünün alışkanlıkları
     const h=active()[+e.key-1]; if(!h) return; const k=todayKey();
     const origin=$(`.cell[data-k="${k}"][data-h="${CSS.escape(h.id)}"]`)||$(`.tchk[data-h="${CSS.escape(h.id)}"]`);
@@ -225,10 +226,10 @@ $('#view').addEventListener('change',e=>{ // ay karşılaştırma seçimleri
 });
 // mobil: yatay kaydırma ile sayfa değiştir
 let sx=null;
-$('#view').addEventListener('touchstart',e=>{ sx=e.target.closest('.grid-scroll,.heat-wrap,.garden,.tscroll,.chart,.ba,.hheat,.pixels,input,textarea,select')?null:[e.touches[0].clientX,e.touches[0].clientY]; },{passive:true});
+$('#view').addEventListener('touchstart',e=>{ sx=e.target.closest('.grid-scroll,.heat-wrap,.garden,.tscroll,.chart,.ba,.hheat,.pixels,.wgrid-wrap,input,textarea,select')?null:[e.touches[0].clientX,e.touches[0].clientY]; },{passive:true});
 $('#view').addEventListener('touchend',e=>{
   if(!sx) return; const dx=e.changedTouches[0].clientX-sx[0], dy=e.changedTouches[0].clientY-sx[1]; sx=null;
-  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6) { const d=dx<0?1:-1; if(view<12) stepMonth(d); else stepSection(d); }
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6) { const d=dx<0?1:-1; if(view<12) stepMonth(d); else if(!(view===TODAY&&stepTab(d))) stepSection(d); }
 },{passive:true});
 
 /* self-test (index.html#test) */
