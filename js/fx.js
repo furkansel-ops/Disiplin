@@ -116,7 +116,7 @@ function ambLoop(now){
   if(!ambType){ ambRaf=0; return; }
   ambRaf=requestAnimationFrame(ambLoop);
   const k=ambLast?frameK(now,ambLast):1; ambLast=now;
-  if(document.hidden) return;
+  if(document.hidden||scrolling) return; // kaydırırken arka plan donar: ekran kartı yalnızca kaydırmayla uğraşır
   const w=innerWidth,h=innerHeight; ac.clearRect(0,0,w,h);
   ambParts.forEach((p,i)=>{
     p.ph+=.02*k; p.x+=(p.vx+Math.sin(p.ph)*.35)*k; p.y+=p.vy*k; p.rot+=p.vr*k;
@@ -142,7 +142,13 @@ function showTip(el){
 }
 document.addEventListener('pointerover',e=>{ const el=e.target.closest('[data-tip]'); if(el!==tipEl) showTip(el); });
 document.addEventListener('focusin',e=>{ const el=e.target.closest('[data-tip]'); if(el!==tipEl) showTip(el); });
-document.addEventListener('scroll',()=>{ if(tipEl) showTip(null); },{capture:true,passive:true});
+// kaydırma sürerken (tablo ya da sayfa) süs animasyonları duraklar, bittikten 250 ms sonra devam eder
+let scrolling=false, scrollT=0;
+document.addEventListener('scroll',()=>{
+  if(tipEl) showTip(null);
+  if(!scrolling){ scrolling=true; document.documentElement.classList.add('scrolling'); }
+  clearTimeout(scrollT); scrollT=setTimeout(()=>{ scrolling=false; document.documentElement.classList.remove('scrolling'); },250);
+},{capture:true,passive:true});
 
 /* seviye atlama ekranı ve başarım bildirimi */
 let lvlT;
